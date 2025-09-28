@@ -70,7 +70,7 @@ export default function SubmitPage({ community }: SubmitPageProps) {
     return (
         <div className="mx-auto max-w-3xl rounded-md bg-white p-6 shadow">
             <h1 className="mb-1 text-2xl font-bold">
-                Создать пост в s/{community.name}
+                Создать пост в с/{community.name}
             </h1>
             <hr className="mb-4" />
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">

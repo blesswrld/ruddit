@@ -2,6 +2,7 @@ import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import { PrismaClient } from "@prisma/client";
 import { useAppSelector } from "@/store/hooks"; // Импортируем хук Redux
 import Link from "next/link"; // Импортируем Link
+import { PostCard, type PostForCard } from "@/components/posts/PostCard";
 
 const prisma = new PrismaClient();
 
@@ -11,8 +12,14 @@ export const getServerSideProps = (async (context) => {
     const community = await prisma.community.findUnique({
         where: { slug: slug as string },
         include: {
-            creator: {
-                select: { username: true },
+            creator: { select: { username: true } },
+            posts: {
+                orderBy: { createdAt: "desc" },
+                include: {
+                    author: { select: { username: true } },
+                    votes: true,
+                    community: { select: { slug: true } },
+                },
             },
         },
     });
@@ -40,15 +47,14 @@ export default function CommunityPage({
             <div className="bg-white">
                 <div className="container mx-auto px-4 py-8">
                     <h1 className="text-3xl font-bold">{community.name}</h1>
-                    <p className="text-gray-500">s/{community.slug}</p>
+                    <p className="text-gray-500">с/{community.slug}</p>
                 </div>
             </div>
 
             {/* Основной контент */}
             <div className="container mx-auto mt-6 grid grid-cols-1 gap-6 md:grid-cols-3">
                 {/* Лента постов */}
-                <div className="md:col-span-2">
-                    {/* Покажем кнопку только залогиненным пользователям */}
+                <div className="flex flex-col gap-4 md:col-span-2">
                     {isAuthenticated && (
                         <div className="mb-4 rounded-md bg-white p-4 shadow">
                             <Link
@@ -59,10 +65,16 @@ export default function CommunityPage({
                             </Link>
                         </div>
                     )}
-
-                    <div className="rounded-md bg-white p-4 shadow">
-                        Здесь будут посты...
-                    </div>
+                    {/* Отображаем посты */}
+                    {community.posts.length > 0 ? (
+                        community.posts.map((post: PostForCard) => (
+                            <PostCard key={post.id} post={post} />
+                        ))
+                    ) : (
+                        <div className="rounded-md bg-white p-4 text-center text-gray-500 shadow">
+                            В этом сообществе еще нет постов. Станьте первым!
+                        </div>
+                    )}
                 </div>
 
                 {/* Сайдбар с информацией */}
@@ -81,7 +93,7 @@ export default function CommunityPage({
                                     community.createdAt
                                 ).toLocaleDateString("ru-RU")}
                             </p>
-                            <p>Создатель: u/{community.creator.username}</p>
+                            <p>Создатель: п/{community.creator.username}</p>
                         </div>
                     </div>
                 </div>

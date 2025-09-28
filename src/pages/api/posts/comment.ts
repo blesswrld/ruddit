@@ -1,0 +1,48 @@
+import { PrismaClient } from "@prisma/client";
+import { verify } from "jsonwebtoken";
+import type { NextApiRequest, NextApiResponse } from "next";
+
+const prisma = new PrismaClient();
+
+interface JwtPayload {
+    userId: string;
+}
+
+export default async function handler(
+    req: NextApiRequest,
+    res: NextApiResponse
+) {
+    if (req.method !== "POST") {
+        return res.status(405).json({ message: "Method Not Allowed" });
+    }
+
+    const { token } = req.cookies;
+    if (!token) {
+        return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    try {
+        const { userId } = verify(token, process.env.JWT_SECRET!) as JwtPayload;
+        const { postId, text, replyToId } = req.body;
+
+        if (!postId || !text || text.trim() === "") {
+            return res
+                .status(400)
+                .json({ message: "Post ID and text are required" });
+        }
+
+        const comment = await prisma.comment.create({
+            data: {
+                text,
+                postId,
+                authorId: userId,
+                replyToId, // Будет undefined, если это комментарий верхнего уровня
+            },
+        });
+
+        return res.status(201).json(comment);
+    } catch (error) {
+        console.error("Comment creation error:", error);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+}
