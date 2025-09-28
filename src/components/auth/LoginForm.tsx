@@ -1,15 +1,47 @@
+import { useAppDispatch } from "@/store/hooks";
+import { closeModal } from "@/store/slices/authSlice";
 import React, { useState } from "react";
 import { Button } from "../common/Button";
 import { Input } from "../common/Input";
 
 export const LoginForm = () => {
+    const dispatch = useAppDispatch();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        console.log("Вход:", { email, password });
-        // TODO: Здесь будет логика отправки данных на API
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const response = await fetch("/api/auth/login", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ email, password }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || "Что-то пошло не так");
+            }
+
+            console.log("Успешный вход:", data);
+            alert(`Добро пожаловать, ${data.user.username}!`); // Временное решение
+            dispatch(closeModal());
+            // TODO: Сохранить информацию о пользователе в Redux
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } catch (err: any) {
+            setError(err.message);
+            console.error(err);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -20,6 +52,7 @@ export const LoginForm = () => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                disabled={isLoading}
                 required
             />
             <Input
@@ -28,9 +61,15 @@ export const LoginForm = () => {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                disabled={isLoading}
                 required
             />
-            <Button type="submit">Войти</Button>
+
+            {error && <p className="text-sm text-red-500">{error}</p>}
+
+            <Button type="submit" disabled={isLoading}>
+                {isLoading ? "Вход..." : "Войти"}
+            </Button>
         </form>
     );
 };
