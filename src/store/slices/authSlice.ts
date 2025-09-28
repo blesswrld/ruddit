@@ -11,6 +11,7 @@ interface AuthState {
     isAuthenticated: boolean;
     user: User | null;
     modal: "login" | "register" | null;
+    status: "idle" | "loading" | "succeeded" | "failed";
 }
 
 // Начальное состояние
@@ -18,6 +19,7 @@ const initialState: AuthState = {
     isAuthenticated: false,
     user: null,
     modal: null, // Изначально никакое окно не открыто
+    status: "idle", // Изначальное состояние
 };
 
 const authSlice = createSlice({
@@ -34,15 +36,29 @@ const authSlice = createSlice({
         closeModal: (state) => {
             state.modal = null;
         },
+
+        // Редьюсеры для управления статусом
+        authCheckStarted: (state) => {
+            state.status = "loading";
+        },
+        authCheckSucceeded: (state) => {
+            state.status = "succeeded";
+        },
+        authCheckFailed: (state) => {
+            state.status = "failed";
+        },
+
         // Редьюсер для установки пользователя
         setUser: (state, action: PayloadAction<User>) => {
             state.isAuthenticated = true;
             state.user = action.payload;
         },
+
         // Редьюсер для выхода
         logout: (state) => {
             state.isAuthenticated = false;
             state.user = null;
+            state.status = "idle"; // Сбрасываем статус при выходе
         },
     },
 });
@@ -51,8 +67,11 @@ export const {
     openLoginModal,
     openRegisterModal,
     closeModal,
-    setUser, // Экспортируем новый action
-    logout, // Экспортируем новый action
+    authCheckStarted,
+    authCheckSucceeded,
+    authCheckFailed,
+    setUser, // Экспортируем action
+    logout, // Экспортируем action
 } = authSlice.actions;
 
 // Экспортируем редьюсер
