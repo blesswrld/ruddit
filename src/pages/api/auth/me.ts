@@ -36,6 +36,7 @@ export default async function handler(
                 id: true,
                 username: true,
                 email: true,
+                avatarUrl: true,
             },
         });
 

@@ -14,6 +14,8 @@ model User {
   username     String   @unique // Имя пользователя, должно быть уникальным
   email        String   @unique // Email, тоже уникальный
   passwordHash String   // Здесь будет храниться ЗАХЕШИРОВАННЫЙ пароль
+  avatarUrl          String?  // <-- Аватар (необязательно)
+  bio                String?  // <-- Описание профиля (необязательно)
   createdAt    DateTime @default(now()) // Дата создания
   updatedAt    DateTime @updatedAt // Дата обновления
 

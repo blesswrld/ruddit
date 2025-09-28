@@ -38,7 +38,32 @@ export const Header = () => {
                     >
                         Создать сообщество
                     </Link>
-                    <span className="font-semibold">{user?.username}</span>
+                    {/* Настройки */}
+                    <Link
+                        href="/settings/profile"
+                        className="rounded-md px-3 py-2 text-sm font-semibold hover:bg-gray-100"
+                    >
+                        Настройки
+                    </Link>
+                    {/* Аватарка */}
+                    <Link
+                        href={`/u/${user?.username}`}
+                        className="flex items-center gap-2"
+                    >
+                        {user?.avatarUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                                src={user.avatarUrl}
+                                alt="User avatar"
+                                className="h-8 w-8 rounded-full object-cover"
+                            />
+                        ) : (
+                            // Заглушка, если нет аватара - первая буква ника
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-600 text-sm font-bold text-white">
+                                {user?.username.charAt(0).toUpperCase()}
+                            </div>
+                        )}
+                    </Link>{" "}
                     <button
                         onClick={handleLogout}
                         className="rounded-md border border-gray-300 px-4 py-2 font-semibold text-gray-700 hover:bg-gray-50"

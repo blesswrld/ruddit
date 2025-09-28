@@ -64,6 +64,7 @@ export default async function handler(
             id: user.id,
             username: user.username,
             email: user.email,
+            avatarUrl: user.avatarUrl,
         });
     } catch (error) {
         console.error("Login error:", error);

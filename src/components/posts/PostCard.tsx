@@ -10,6 +10,7 @@ export type PostForCard = {
     author: {
         username: string;
     };
+
     // Добавляем голоса
     votes: {
         userId: string;
@@ -17,6 +18,7 @@ export type PostForCard = {
         type: "UP" | "DOWN";
     }[];
 
+    // Добавляем поле для сообщества
     community: {
         slug: string;
     };
@@ -45,7 +47,14 @@ export const PostCard = ({ post }: PostCardProps) => {
                 <div className="p-4">
                     <div className="mb-2 text-xs text-gray-500">
                         <span>
-                            Опубликовал п/{post.author.username} • {postDate}
+                            Опубликовал{" "}
+                            <Link
+                                href={`/u/${post.author.username}`}
+                                className="font-semibold hover:underline"
+                            >
+                                п/{post.author.username}
+                            </Link>{" "}
+                            • {postDate}
                         </span>
                     </div>
                     <Link href={`/s/${post.community.slug}/post/${post.id}`}>

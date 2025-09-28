@@ -93,7 +93,15 @@ export default function CommunityPage({
                                     community.createdAt
                                 ).toLocaleDateString("ru-RU")}
                             </p>
-                            <p>Создатель: п/{community.creator.username}</p>
+                            <p>
+                                Создатель:{" "}
+                                <Link
+                                    href={`/u/${community.creator.username}`}
+                                    className="font-semibold hover:underline"
+                                >
+                                    п/{community.creator.username}
+                                </Link>
+                            </p>
                         </div>
                     </div>
                 </div>

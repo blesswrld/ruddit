@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useRouter } from "next/router";
 import { MessageSquareReply } from "lucide-react"; // Иконка ответа
+import Link from "next/link";
 
 // Определяем тип комментария, который может содержать ответы (replies)
 type CommentWithReplies = {
@@ -49,8 +50,13 @@ export const Comment = ({ comment }: CommentProps) => {
             {/* Сам комментарий */}
             <div className="rounded-md bg-gray-50 p-3">
                 <div className="text-xs text-gray-500 mb-1">
-                    п/{comment.author.username} •{" "}
-                    {new Date(comment.createdAt).toLocaleDateString("ru-RU")}
+                    <Link
+                        href={`/u/${comment.author.username}`}
+                        className="font-semibold hover:underline"
+                    >
+                        п/{comment.author.username}
+                    </Link>{" "}
+                    • {new Date(comment.createdAt).toLocaleDateString("ru-RU")}
                 </div>
                 <p className="text-gray-800">{comment.text}</p>
                 <button
