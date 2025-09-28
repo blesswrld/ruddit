@@ -1,9 +1,15 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-// Описываем тип для состояния этого среза
+// Опишем тип для объекта пользователя
+interface User {
+    id: string;
+    username: string;
+    email: string;
+}
+
 interface AuthState {
     isAuthenticated: boolean;
-    user: { name: string } | null;
+    user: User | null;
     modal: "login" | "register" | null;
 }
 
@@ -28,12 +34,26 @@ const authSlice = createSlice({
         closeModal: (state) => {
             state.modal = null;
         },
+        // Редьюсер для установки пользователя
+        setUser: (state, action: PayloadAction<User>) => {
+            state.isAuthenticated = true;
+            state.user = action.payload;
+        },
+        // Редьюсер для выхода
+        logout: (state) => {
+            state.isAuthenticated = false;
+            state.user = null;
+        },
     },
 });
 
-// Экспортируем actions, чтобы их можно было использовать в компонентах
-export const { openLoginModal, openRegisterModal, closeModal } =
-    authSlice.actions;
+export const {
+    openLoginModal,
+    openRegisterModal,
+    closeModal,
+    setUser, // Экспортируем новый action
+    logout, // Экспортируем новый action
+} = authSlice.actions;
 
 // Экспортируем редьюсер
 export default authSlice.reducer;

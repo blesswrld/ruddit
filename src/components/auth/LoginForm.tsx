@@ -3,6 +3,7 @@ import { closeModal } from "@/store/slices/authSlice";
 import React, { useState } from "react";
 import { Button } from "../common/Button";
 import { Input } from "../common/Input";
+import { setUser } from "@/store/slices/authSlice"; // Импортируем setUser
 
 export const LoginForm = () => {
     const dispatch = useAppDispatch();
@@ -31,10 +32,9 @@ export const LoginForm = () => {
                 throw new Error(data.message || "Что-то пошло не так");
             }
 
-            console.log("Успешный вход:", data);
-            alert(`Добро пожаловать, ${data.user.username}!`); // Временное решение
-            dispatch(closeModal());
-            // TODO: Сохранить информацию о пользователе в Redux
+            dispatch(setUser(data)); // Сохраняем пользователя в Redux
+            dispatch(closeModal()); // Закрываем модальное окно
+
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (err: any) {
             setError(err.message);
