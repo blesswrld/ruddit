@@ -1,5 +1,7 @@
 import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import { PrismaClient } from "@prisma/client";
+import { useAppSelector } from "@/store/hooks"; // Импортируем хук Redux
+import Link from "next/link"; // Импортируем Link
 
 const prisma = new PrismaClient();
 
@@ -29,6 +31,9 @@ export const getServerSideProps = (async (context) => {
 export default function CommunityPage({
     community,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
+    // Получаем статус аутентификации из Redux
+    const { isAuthenticated } = useAppSelector((state) => state.auth);
+
     return (
         <div>
             {/* Шапка сообщества */}
@@ -41,8 +46,20 @@ export default function CommunityPage({
 
             {/* Основной контент */}
             <div className="container mx-auto mt-6 grid grid-cols-1 gap-6 md:grid-cols-3">
-                {/* Лента постов (пока пустая) */}
+                {/* Лента постов */}
                 <div className="md:col-span-2">
+                    {/* Покажем кнопку только залогиненным пользователям */}
+                    {isAuthenticated && (
+                        <div className="mb-4 rounded-md bg-white p-4 shadow">
+                            <Link
+                                href={`/s/${community.slug}/submit`}
+                                className="block w-full rounded-md border border-gray-300 bg-gray-50 px-4 py-3 text-left text-gray-600 hover:bg-gray-100"
+                            >
+                                Создать пост
+                            </Link>
+                        </div>
+                    )}
+
                     <div className="rounded-md bg-white p-4 shadow">
                         Здесь будут посты...
                     </div>

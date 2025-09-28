@@ -19,6 +19,8 @@ model User {
 
   // Связь с созданными сообществами
   createdCommunities Community[] @relation("CreatedCommunities")
+
+  posts Post[] 
 }
 
 model Community {
@@ -32,4 +34,20 @@ model Community {
   // Связь с создателем
   creatorId   String
   creator     User     @relation("CreatedCommunities", fields: [creatorId], references: [id])
+
+  posts Post[]
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  title     String
+  content   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+
+  communityId String
+  community   Community @relation(fields: [communityId], references: [id])
 }
