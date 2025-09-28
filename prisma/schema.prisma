@@ -16,4 +16,20 @@ model User {
   passwordHash String   // Здесь будет храниться ЗАХЕШИРОВАННЫЙ пароль
   createdAt    DateTime @default(now()) // Дата создания
   updatedAt    DateTime @updatedAt // Дата обновления
+
+  // Связь с созданными сообществами
+  createdCommunities Community[] @relation("CreatedCommunities")
+}
+
+model Community {
+  id          String   @id @default(cuid())
+  name        String   // Название сообщества
+  slug        String   @unique // Слаг должен быть уникальным
+  description String?  // Описание, необязательное
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Связь с создателем
+  creatorId   String
+  creator     User     @relation("CreatedCommunities", fields: [creatorId], references: [id])
 }

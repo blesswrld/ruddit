@@ -32,6 +32,12 @@ export const Header = () => {
                 {isAuthenticated ? (
                     // Если пользователь вошел
                     <div className="flex items-center gap-4">
+                        <Link
+                            href="/s/create"
+                            className="rounded-md px-3 py-2 text-sm font-semibold hover:bg-gray-100"
+                        >
+                            Создать сообщество
+                        </Link>
                         <span className="font-semibold">{user?.username}</span>
                         <button
                             onClick={handleLogout}
