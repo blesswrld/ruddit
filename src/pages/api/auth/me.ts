@@ -37,6 +37,7 @@ export default async function handler(
                 username: true,
                 email: true,
                 avatarUrl: true,
+                bio: true,
             },
         });
 

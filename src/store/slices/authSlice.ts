@@ -50,6 +50,21 @@ const authSlice = createSlice({
             state.status = "failed";
         },
 
+        // Редьюсер для обновления профиля
+        updateUserProfile: (
+            state,
+            action: PayloadAction<{
+                bio?: string | null;
+                avatarUrl?: string | null;
+            }>
+        ) => {
+            if (state.user) {
+                state.user.bio = action.payload.bio ?? state.user.bio;
+                state.user.avatarUrl =
+                    action.payload.avatarUrl ?? state.user.avatarUrl;
+            }
+        },
+
         // Редьюсер для установки пользователя
         setUser: (state, action: PayloadAction<User>) => {
             state.isAuthenticated = true;
@@ -72,6 +87,7 @@ export const {
     authCheckStarted,
     authCheckSucceeded,
     authCheckFailed,
+    updateUserProfile, // Экспортируем action
     setUser, // Экспортируем action
     logout, // Экспортируем action
 } = authSlice.actions;

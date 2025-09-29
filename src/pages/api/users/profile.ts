@@ -25,6 +25,13 @@ export default async function handler(
         const { userId } = verify(token, process.env.JWT_SECRET!) as JwtPayload;
         const { bio, avatarUrl } = req.body;
 
+        // Проверка на длину описания
+        if (bio && typeof bio === "string" && bio.length > 210) {
+            return res.status(400).json({
+                message: "Описание не может быть длиннее 210 символов.",
+            });
+        }
+
         const updatedUser = await prisma.user.update({
             where: { id: userId },
             data: {

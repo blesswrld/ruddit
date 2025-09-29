@@ -2,9 +2,12 @@ import { Button } from "@/components/common/Button";
 import { useAppSelector } from "@/store/hooks";
 import { useRouter } from "next/router";
 import { useState, useEffect, useRef } from "react";
+import { useDispatch } from "react-redux";
+import { updateUserProfile } from "@/store/slices/authSlice";
 
 export default function ProfileSettingsPage() {
     const router = useRouter();
+    const dispatch = useDispatch();
     const { user, isAuthenticated, status } = useAppSelector(
         (state) => state.auth
     );
@@ -15,16 +18,25 @@ export default function ProfileSettingsPage() {
     const [file, setFile] = useState<File | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // Заполняем форму текущими данными пользователя, когда они загрузятся
     useEffect(() => {
-        if (user) setBio(user.bio || "");
+        if (user) {
+            setBio(user.bio || "");
+        }
     }, [user]);
 
+    // Защита страницы: если юзер не залогинен, перекидываем на главную
     useEffect(() => {
-        if (status === "succeeded" && !isAuthenticated) router.push("/");
+        // Ждем, пока проверка аутентификации завершится
+        if (status === "succeeded" && !isAuthenticated) {
+            router.push("/");
+        }
     }, [isAuthenticated, status, router]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files) setFile(e.target.files[0]);
+        if (e.target.files) {
+            setFile(e.target.files[0]);
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -34,9 +46,10 @@ export default function ProfileSettingsPage() {
 
         let uploadedAvatarUrl = user?.avatarUrl;
 
+        // 1. Если выбран новый файл, загружаем его
         if (file) {
             try {
-                // 1. Получаем pre-signed URL с нашего бэкенда
+                // 1.1 Получаем pre-signed URL и publicUrl с нашего бэкенда
                 const signResponse = await fetch(
                     "/api/users/sign-yandex-upload",
                     {
@@ -53,7 +66,7 @@ export default function ProfileSettingsPage() {
 
                 const { signedUrl, publicUrl } = await signResponse.json();
 
-                // 2. Загружаем файл напрямую в Yandex Storage
+                // 1.2 Загружаем файл напрямую в Yandex Storage
                 const uploadResponse = await fetch(signedUrl, {
                     method: "PUT",
                     body: file,
@@ -64,7 +77,7 @@ export default function ProfileSettingsPage() {
                 if (!uploadResponse.ok)
                     throw new Error("Не удалось загрузить файл в хранилище.");
 
-                uploadedAvatarUrl = publicUrl; // Получаем публичный URL
+                uploadedAvatarUrl = publicUrl;
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } catch (error: any) {
                 setMessage(`Ошибка при загрузке аватара: ${error.message}`);
@@ -73,7 +86,7 @@ export default function ProfileSettingsPage() {
             }
         }
 
-        // 3. Сохраняем bio и новый URL аватара в нашей базе
+        // 2. Сохраняем bio и новый URL аватара в нашей базе
         try {
             const response = await fetch("/api/users/profile", {
                 method: "POST",
@@ -83,10 +96,12 @@ export default function ProfileSettingsPage() {
             });
             if (!response.ok) throw new Error("Не удалось обновить профиль.");
 
+            const updatedUser = await response.json();
+            dispatch(updateUserProfile(updatedUser));
+
             setMessage("Профиль успешно обновлен!");
             setFile(null);
             if (fileInputRef.current) fileInputRef.current.value = "";
-            setTimeout(() => router.reload(), 1500);
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
             setMessage(`Ошибка при сохранении: ${error.message}`);
@@ -95,6 +110,7 @@ export default function ProfileSettingsPage() {
         }
     };
 
+    // Пока идет проверка, ничего не показываем
     if (status !== "succeeded") {
         return <div className="container mx-auto p-6">Загрузка...</div>;
     }
@@ -108,7 +124,7 @@ export default function ProfileSettingsPage() {
                         Аватар
                     </label>
                     <div className="flex items-center gap-4">
-                        {/*  eslint-disable-next-line @next/next/no-img-element */}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                             src={
                                 file
@@ -143,7 +159,16 @@ export default function ProfileSettingsPage() {
                         className="w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm"
                         placeholder="Расскажите немного о себе..."
                         disabled={isLoading}
+                        maxLength={210} // Добавляем атрибут maxLength
                     />
+                    {/* Добавляем счетчик символов */}
+                    <p
+                        className={`mt-1 text-xs ${
+                            bio.length >= 210 ? "text-red-500" : "text-gray-500"
+                        }`}
+                    >
+                        {bio.length} / 210
+                    </p>
                 </div>
 
                 {message && <p className="text-sm text-green-600">{message}</p>}
@@ -151,7 +176,8 @@ export default function ProfileSettingsPage() {
                 <div className="flex justify-end">
                     <Button
                         type="submit"
-                        disabled={isLoading}
+                        // Блокируем кнопку, если превышен лимит
+                        disabled={isLoading || bio.length > 210}
                         className="w-auto"
                     >
                         {isLoading ? "Сохранение..." : "Сохранить изменения"}
