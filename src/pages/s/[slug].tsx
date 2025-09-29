@@ -3,16 +3,46 @@ import { PrismaClient } from "@prisma/client";
 import { useAppSelector } from "@/store/hooks"; // Импортируем хук Redux
 import Link from "next/link"; // Импортируем Link
 import { PostCard, type PostForCard } from "@/components/posts/PostCard";
+import { verify } from "jsonwebtoken";
+import { SubscribeToggle } from "@/components/community/SubscribeToggle";
+import { Button } from "@/components/common/Button";
 
 const prisma = new PrismaClient();
 
+// Определяем тип для JWT, если он есть
+interface JwtPayload {
+    userId: string;
+}
+
 export const getServerSideProps = (async (context) => {
     const { slug } = context.params!;
+
+    let currentUserId: string | null = null;
+    const { token } = context.req.cookies;
+    if (token) {
+        try {
+            const { userId } = verify(
+                token,
+                process.env.JWT_SECRET!
+            ) as JwtPayload;
+            currentUserId = userId;
+        } catch (error) {
+            currentUserId = null;
+        }
+    }
 
     const community = await prisma.community.findUnique({
         where: { slug: slug as string },
         include: {
             creator: { select: { username: true } },
+            _count: {
+                select: { subscribers: true },
+            },
+            subscribers: {
+                where: {
+                    userId: currentUserId ?? undefined,
+                },
+            },
             posts: {
                 orderBy: { createdAt: "desc" },
                 include: {
@@ -28,15 +58,26 @@ export const getServerSideProps = (async (context) => {
         return { notFound: true };
     }
 
+    const isSubscribed = community.subscribers.length > 0;
+
+    // Является ли текущий пользователь создателем?
+    const isCreator = community.creatorId === currentUserId;
+
     return {
         props: {
             community: JSON.parse(JSON.stringify(community)),
+            isSubscribed: isSubscribed,
+            subscriberCount: community._count.subscribers,
+            isCreator: isCreator, // Передаем флаг
         },
     };
 }) satisfies GetServerSideProps;
 
 export default function CommunityPage({
     community,
+    isSubscribed,
+    subscriberCount, // Пока не используем, но в будущем пригодится
+    isCreator, // Получаем пропс
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
     // Получаем статус аутентификации из Redux
     const { isAuthenticated } = useAppSelector((state) => state.auth);
@@ -46,8 +87,20 @@ export default function CommunityPage({
             {/* Шапка сообщества */}
             <div className="bg-white">
                 <div className="container mx-auto px-4 py-8">
-                    <h1 className="text-3xl font-bold">{community.name}</h1>
-                    <p className="text-gray-500">с/{community.slug}</p>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h1 className="text-3xl font-bold">
+                                {community.name}
+                            </h1>
+                            <p className="text-gray-500">с/{community.slug}</p>
+                        </div>
+                        {isAuthenticated && (
+                            <SubscribeToggle
+                                initialIsSubscribed={isSubscribed}
+                                communityId={community.id}
+                            />
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -102,6 +155,17 @@ export default function CommunityPage({
                                     п/{community.creator.username}
                                 </Link>
                             </p>
+                            <p>Подписчиков: {subscriberCount}</p>
+
+                            {/* Кнопка настроек для создателя */}
+                            {isCreator && (
+                                <div className="mt-4 border-t pt-4">
+                                    {/* TODO: Сделать страницу настроек сообщества */}
+                                    <Button className="w-full">
+                                        Настройки сообщества
+                                    </Button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

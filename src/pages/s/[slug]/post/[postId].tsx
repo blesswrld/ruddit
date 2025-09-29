@@ -1,17 +1,10 @@
 import { PostCard } from "@/components/posts/PostCard";
 import { PrismaClient } from "@prisma/client";
-import type { GetServerSideProps } from "next";
+import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import { CommentForm } from "@/components/comments/CommentForm";
 import { Comment } from "@/components/comments/Comment";
 
 const prisma = new PrismaClient();
-
-// Определяем тип для поста с комментариями, голосами и т.д.
-// (Используем простой подход, чтобы избежать ошибок с типами)
-type PostPageProps = {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    post: any; // Используем any временно, чтобы не бороться с типами
-};
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
     const { postId } = context.params!;
@@ -19,8 +12,14 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     const post = await prisma.post.findUnique({
         where: { id: postId as string },
         include: {
-            author: { select: { username: true } },
-            community: { select: { slug: true } },
+            author: { select: { username: true, id: true } }, // 1. Загружаем ID автора поста
+            community: {
+                select: {
+                    slug: true,
+                    creatorId: true, // 2. Загружаем ID создателя сообщества
+                    subscribers: { select: { userId: true } }, // 3. Загружаем ID всех подписчиков
+                },
+            },
             votes: true,
             comments: {
                 where: {
@@ -31,17 +30,20 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
                 },
                 // Начинаем рекурсию
                 include: {
-                    author: { select: { username: true } },
+                    author: { select: { username: true, id: true } }, // Загружаем ID автора коммента
                     replies: {
                         // 1. Загружаем ответы
                         orderBy: { createdAt: "asc" }, // Старые ответы выше
                         include: {
-                            author: { select: { username: true } },
+                            author: { select: { username: true, id: true } },
                             replies: {
                                 // 2. Загружаем ответы на ответы
                                 orderBy: { createdAt: "asc" },
                                 include: {
-                                    author: { select: { username: true } },
+                                    author: {
+                                        select: { username: true, id: true },
+                                    },
+                                    // Можно добавить еще один уровень вложенности, если нужно
                                 },
                             },
                         },
@@ -62,7 +64,19 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     };
 };
 
-export default function PostPage({ post }: PostPageProps) {
+export default function PostPage({
+    post,
+}: InferGetServerSidePropsType<typeof getServerSideProps>) {
+    // Формируем объект с информацией о посте, который будем передавать комментариям
+    const postInfo = {
+        postId: post.id,
+        authorId: post.author.id,
+        community: {
+            creatorId: post.community.creatorId,
+            subscribers: post.community.subscribers,
+        },
+    };
+
     return (
         <div className="container mx-auto mt-6 max-w-3xl">
             {/* Отображаем сам пост с помощью нашего PostCard */}
@@ -78,10 +92,14 @@ export default function PostPage({ post }: PostPageProps) {
                 </h3>
                 {post.comments.length > 0 ? (
                     <div className="flex flex-col gap-4">
-                        {/* eslint-disable-next-line
-                        @typescript-eslint/no-explicit-any */}
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                         {post.comments.map((comment: any) => (
-                            <Comment key={comment.id} comment={comment} />
+                            // Передаем postInfo в каждый комментарий верхнего уровня
+                            <Comment
+                                key={comment.id}
+                                comment={comment}
+                                postInfo={postInfo}
+                            />
                         ))}
                     </div>
                 ) : (

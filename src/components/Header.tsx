@@ -100,6 +100,13 @@ export const Header = () => {
                 <Link href="/" className="text-xl font-bold text-gray-800">
                     Ruddit
                 </Link>
+                {/* Ссылка на сообщества */}
+                <Link
+                    href="/communities"
+                    className="text-sm font-semibold text-gray-600 hover:text-gray-900"
+                >
+                    Сообщества
+                </Link>
                 {/* Вместо тернарного оператора используем нашу функцию */}
                 {renderAuthButtons()}
             </nav>

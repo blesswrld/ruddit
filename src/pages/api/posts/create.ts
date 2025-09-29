@@ -41,6 +41,23 @@ export default async function handler(
             return res.status(404).json({ message: "Community not found" });
         }
 
+        // Является ли пользователь подписчиком?
+        const subscription = await prisma.subscription.findUnique({
+            where: {
+                userId_communityId: {
+                    userId,
+                    communityId,
+                },
+            },
+        });
+
+        if (!subscription) {
+            return res.status(403).json({
+                message:
+                    "Вы должны быть участником сообщества, чтобы создавать посты.",
+            });
+        }
+
         const post = await prisma.post.create({
             data: {
                 title,
