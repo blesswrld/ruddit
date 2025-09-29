@@ -1,110 +1,65 @@
-import { PostCard, type PostForCard } from "@/components/posts/PostCard";
 import { PrismaClient } from "@prisma/client";
 import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
-import { verify } from "jsonwebtoken"; // Импортируем verify
-import Link from "next/link";
 import { useAppSelector } from "@/store/hooks";
+import { PostFeed } from "@/components/posts/PostFeed";
+import { useState } from "react";
 
 const prisma = new PrismaClient();
 
-interface JwtPayload {
-    userId: string;
-}
+const POSTS_PER_PAGE = 5;
 
-export const getServerSideProps = (async (context) => {
-    // Получаем feed из URL. По умолчанию - 'subscribed' для залогиненных.
-    const feedType = context.query.feed || "subscribed";
-
-    let currentUserId: string | null = null;
-    const { token } = context.req.cookies;
-    if (token) {
-        try {
-            const { userId } = verify(
-                token,
-                process.env.JWT_SECRET!
-            ) as JwtPayload;
-            currentUserId = userId;
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        } catch (error) {
-            currentUserId = null;
-        }
-    }
-
-    let posts;
-    // Логика выбора постов в зависимости от feedType
-    if (feedType === "new" || !currentUserId) {
-        // Показываем "Новое", если выбрана эта вкладка ИЛИ если пользователь гость
-        posts = await prisma.post.findMany({
-            orderBy: { createdAt: "desc" },
-            include: {
-                author: { select: { username: true } },
-                community: { select: { slug: true } },
-                votes: true,
-            },
-        });
-    } else {
-        // Показываем "Моя лента" (subscribed)
-        const subscriptions = await prisma.subscription.findMany({
-            where: { userId: currentUserId },
-            select: { communityId: true },
-        });
-        const subscribedCommunityIds = subscriptions.map(
-            (sub) => sub.communityId
-        );
-
-        posts = await prisma.post.findMany({
-            where: {
-                communityId: {
-                    in: subscribedCommunityIds,
-                },
-            },
-            orderBy: { createdAt: "desc" },
-            include: {
-                author: { select: { username: true } },
-                community: { select: { slug: true } },
-                votes: true,
-            },
-        });
-    }
+export const getServerSideProps = (async () => {
+    // Просто загружаем первую страницу "Нового" для быстрой первоначальной отрисовки.
+    const posts = await prisma.post.findMany({
+        take: POSTS_PER_PAGE,
+        skip: 0,
+        orderBy: { createdAt: "desc" },
+        include: {
+            author: { select: { username: true } },
+            community: { select: { slug: true } },
+            votes: true,
+        },
+    });
 
     return {
         props: {
-            posts: JSON.parse(JSON.stringify(posts)),
-            // Передаем тип ленты на клиент, чтобы подсветить нужную вкладку
-            feedType: currentUserId ? feedType : "new",
+            initialPosts: JSON.parse(JSON.stringify(posts)),
         },
     };
 }) satisfies GetServerSideProps;
 
 export default function HomePage({
-    posts,
-    feedType,
+    initialPosts,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
     const { isAuthenticated } = useAppSelector((state) => state.auth);
+    // Состояние для текущей активной вкладки
+    const [activeFeed, setActiveFeed] = useState<"subscribed" | "new">(
+        "subscribed"
+    );
 
     const FeedTabs = () => (
         <div className="mb-4 border-b">
             <nav className="-mb-px flex space-x-8">
-                <Link
-                    href="/"
+                <button
+                    onClick={() => setActiveFeed("subscribed")}
                     className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium ${
-                        feedType === "subscribed"
+                        activeFeed === "subscribed"
                             ? "border-blue-500 text-blue-600"
                             : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
                     }`}
                 >
                     Моя лента
-                </Link>
-                <Link
-                    href="/?feed=new"
+                </button>
+                <button
+                    onClick={() => setActiveFeed("new")}
                     className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium ${
-                        feedType === "new"
+                        activeFeed === "new"
                             ? "border-blue-500 text-blue-600"
                             : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
                     }`}
                 >
                     Новое
-                </Link>
+                </button>
             </nav>
         </div>
     );
@@ -117,32 +72,16 @@ export default function HomePage({
                 <h1 className="mb-4 text-2xl font-bold">Новое</h1>
             )}
 
-            <div className="flex flex-col gap-4">
-                {posts.length > 0 ? (
-                    posts.map((post: PostForCard) => (
-                        <PostCard key={post.id} post={post} />
-                    ))
-                ) : (
-                    <div className="text-center text-gray-500">
-                        {isAuthenticated && feedType === "subscribed" ? (
-                            <>
-                                <p>Ваша лента пуста.</p>
-                                <p className="mt-2">
-                                    <Link
-                                        href="/communities"
-                                        className="text-blue-600 hover:underline"
-                                    >
-                                        Вступите в сообщества
-                                    </Link>
-                                    , чтобы видеть здесь посты.
-                                </p>
-                            </>
-                        ) : (
-                            <p>Пока здесь нет ни одного поста.</p>
-                        )}
-                    </div>
-                )}
-            </div>
+            {/* Теперь мы рендерим PostFeed в зависимости от активной вкладки */}
+            {isAuthenticated && activeFeed === "subscribed" && (
+                // Для "Моей ленты" initialPosts пустые, React Query сам все загрузит
+                <PostFeed initialPosts={[]} feedType="subscribed" />
+            )}
+
+            {/* Ленту "Новое" показываем гостям или по клику на вкладку */}
+            {(!isAuthenticated || activeFeed === "new") && (
+                <PostFeed initialPosts={initialPosts} feedType="new" />
+            )}
         </div>
     );
 }

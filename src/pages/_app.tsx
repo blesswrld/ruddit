@@ -11,6 +11,8 @@ import { store } from "@/store/store";
 import "@/styles/globals.css";
 import type { AppProps } from "next/app";
 import { useEffect } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useState } from "react";
 import { Provider } from "react-redux";
 
 // Создаем "умный" компонент, который будет содержать логику
@@ -44,9 +46,15 @@ function AppContent({ Component, pageProps }: AppProps) {
 
 // Главный компонент App остается простым провайдером
 export default function App(props: AppProps) {
+    // Создаем клиент. Важно, чтобы он не пересоздавался при каждом рендере.
+    const [queryClient] = useState(() => new QueryClient());
+
     return (
         <Provider store={store}>
-            <AppContent {...props} />
+            <QueryClientProvider client={queryClient}>
+                {/* Оборачиваем */}
+                <AppContent {...props} />
+            </QueryClientProvider>
         </Provider>
     );
 }
