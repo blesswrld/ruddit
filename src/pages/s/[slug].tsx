@@ -26,6 +26,7 @@ export const getServerSideProps = (async (context) => {
                 process.env.JWT_SECRET!
             ) as JwtPayload;
             currentUserId = userId;
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
             currentUserId = null;
         }
@@ -160,10 +161,13 @@ export default function CommunityPage({
                             {/* Кнопка настроек для создателя */}
                             {isCreator && (
                                 <div className="mt-4 border-t pt-4">
-                                    {/* TODO: Сделать страницу настроек сообщества */}
-                                    <Button className="w-full">
-                                        Настройки сообщества
-                                    </Button>
+                                    <Link
+                                        href={`/s/${community.slug}/settings`}
+                                    >
+                                        <Button className="w-full text-gray-600 hover:text-gray-900">
+                                            Настройки сообщества
+                                        </Button>
+                                    </Link>
                                 </div>
                             )}
                         </div>

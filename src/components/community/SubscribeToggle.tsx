@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "../common/Button";
+import { useRouter } from "next/navigation";
 
 type SubscribeToggleProps = {
     initialIsSubscribed: boolean;
@@ -12,6 +13,7 @@ export const SubscribeToggle = ({
     initialIsSubscribed,
     communityId,
 }: SubscribeToggleProps) => {
+    const router = useRouter();
     const [isSubscribed, setIsSubscribed] = useState(initialIsSubscribed);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -29,7 +31,9 @@ export const SubscribeToggle = ({
         });
 
         setIsLoading(false);
-        // Можно добавить router.reload() для синхронизации счетчика, но пока оставим так
+
+        // Перезагружаем страницу, чтобы обновить счетчик подписчиков
+        router.refresh();
     };
 
     return (
