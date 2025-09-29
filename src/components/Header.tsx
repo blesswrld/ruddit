@@ -8,9 +8,12 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { SearchInput } from "../components/common/SearchInput";
 import { Plus } from "lucide-react";
+import { useRouter } from "next/router";
 
 export const Header = () => {
     const dispatch = useAppDispatch();
+    const router = useRouter();
+
     const { isAuthenticated, user, status } = useAppSelector(
         (state) => state.auth
     );
@@ -39,6 +42,7 @@ export const Header = () => {
             console.error("Failed to logout", error);
         } finally {
             dispatch(logout());
+            router.reload(); // Перезагружаем страницу
         }
     };
 
