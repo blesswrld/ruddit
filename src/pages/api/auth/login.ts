@@ -44,7 +44,7 @@ export default async function handler(
         const token = jwt.sign(
             { userId: user.id }, // Полезная нагрузка токена
             process.env.JWT_SECRET!, // Наш секретный ключ из .env
-            { expiresIn: "1d" } // Время жизни токена (1 день)
+            { expiresIn: "30d" } // Время жизни токена (30 дней)
         );
 
         // 4. Устанавливаем токен в httpOnly cookie
@@ -53,7 +53,7 @@ export default async function handler(
             cookie.serialize("token", token, {
                 httpOnly: true, // Куки недоступны из JS на клиенте
                 secure: process.env.NODE_ENV !== "development", // В продакшене только по HTTPS
-                maxAge: 60 * 60 * 24, // 1 день в секундах
+                maxAge: 60 * 60 * 24 * 30, // 1 месяц
                 sameSite: "strict", // Защита от CSRF
                 path: "/", // Куки доступны на всем сайте
             })
