@@ -13,8 +13,8 @@ model User {
   username     String   @unique // Имя пользователя, должно быть уникальным
   email        String   @unique // Email, тоже уникальный
   passwordHash String   // Здесь будет храниться ЗАХЕШИРОВАННЫЙ пароль
-  avatarUrl          String?  // <-- Аватар (необязательно)
-  bio                String?  // <-- Описание профиля (необязательно)
+  avatarUrl          String?  // Аватар (необязательно)
+  bio                String?  // Описание профиля (необязательно)
   createdAt    DateTime @default(now()) // Дата создания
   updatedAt    DateTime @updatedAt // Дата обновления
 
@@ -28,6 +28,9 @@ model User {
   comments Comment[]
 
   subscriptions Subscription[]
+
+  notifications     Notification[] @relation("Notifications")
+  sentNotifications Notification[] @relation("SentNotifications")
 }
 
 model Community {
@@ -63,6 +66,8 @@ model Post {
   votes Vote[]
 
   comments Comment[]
+
+  notifications Notification[]
 }
 
 enum VoteType {
@@ -98,6 +103,8 @@ model Comment {
   replyToId String?
   replyTo   Comment?  @relation("Replies", fields: [replyToId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   replies   Comment[] @relation("Replies")
+
+  notifications Notification[]
 }
 
 model Subscription {
@@ -108,4 +115,30 @@ model Subscription {
   community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
 
   @@id([userId, communityId]) // Составной ключ: пара (user, community) уникальна
+}
+
+enum NotificationType {
+  NEW_REPLY // Новый ответ комментарий
+  // В будущем можно добавить NEW_POST_COMMENT, NEW_VOTE и т.д.
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  isRead    Boolean  @default(false) // Прочитано ли уведомление
+  type      NotificationType
+
+  // Для кого это уведомление
+  recipientId String
+  recipient   User     @relation("Notifications", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  // Кто вызвал уведомление
+  senderId String
+  sender   User     @relation("SentNotifications", fields: [senderId], references: [id], onDelete: Cascade)
+  
+  // Где это произошло (ссылки)
+  postId    String?
+  post      Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  commentId String?  // Комментарий, на который ответили
+  comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
 }

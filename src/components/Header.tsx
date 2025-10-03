@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import { SearchInput } from "../components/common/SearchInput";
 import { Plus } from "lucide-react";
 import { useRouter } from "next/router";
+import { NotificationsDropdown } from "./layout/NotificationsDropdown";
 
 export const Header = () => {
     const dispatch = useAppDispatch();
@@ -63,6 +64,9 @@ export const Header = () => {
                     >
                         <Plus className="h-6 w-6 text-gray-700" />
                     </Link>
+
+                    <NotificationsDropdown />
+
                     {/* Меню пользователя */}
                     <div className="relative" ref={menuRef}>
                         <button

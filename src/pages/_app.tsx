@@ -14,6 +14,7 @@ import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 import { Provider } from "react-redux";
+import { Toaster } from "react-hot-toast";
 
 // Создаем "умный" компонент, который будет содержать логику
 function AppContent({ Component, pageProps }: AppProps) {
@@ -53,7 +54,7 @@ export default function App(props: AppProps) {
         <Provider store={store}>
             <QueryClientProvider client={queryClient}>
                 {/* Оборачиваем */}
-                <AppContent {...props} />
+                <Toaster position="bottom-right" /> <AppContent {...props} />
             </QueryClientProvider>
         </Provider>
     );

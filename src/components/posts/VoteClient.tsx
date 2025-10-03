@@ -60,7 +60,7 @@ export const VoteClient = ({ initialVotes, postId }: VoteClientProps) => {
     };
 
     return (
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
             <button
                 onClick={() => handleVote("UP")}
                 className={`p-1 rounded-md ${

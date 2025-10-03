@@ -2,7 +2,7 @@ import { PostCard } from "@/components/posts/PostCard";
 import { PrismaClient } from "@prisma/client";
 import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import { CommentForm } from "@/components/comments/CommentForm";
-import { Comment } from "@/components/comments/Comment";
+import { CommentTree } from "@/components/comments/CommentTree"; // Импортируем CommentTree
 
 const prisma = new PrismaClient();
 
@@ -12,45 +12,26 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     const post = await prisma.post.findUnique({
         where: { id: postId as string },
         include: {
-            author: { select: { username: true, id: true } }, // 1. Загружаем ID автора поста
+            author: { select: { username: true, id: true } },
             community: {
                 select: {
                     slug: true,
-                    creatorId: true, // 2. Загружаем ID создателя сообщества
-                    subscribers: { select: { userId: true } }, // 3. Загружаем ID всех подписчиков
+                    creatorId: true,
+                    subscribers: { select: { userId: true } },
                 },
             },
             votes: true,
-            comments: {
-                where: {
-                    replyToId: null, // Только комментарии верхнего уровня
-                },
-                orderBy: {
-                    createdAt: "desc",
-                },
-                // Начинаем рекурсию
-                include: {
-                    author: { select: { username: true, id: true } }, // Загружаем ID автора коммента
-                    replies: {
-                        // 1. Загружаем ответы
-                        orderBy: { createdAt: "asc" }, // Старые ответы выше
-                        include: {
-                            author: { select: { username: true, id: true } },
-                            replies: {
-                                // 2. Загружаем ответы на ответы
-                                orderBy: { createdAt: "asc" },
-                                include: {
-                                    author: {
-                                        select: { username: true, id: true },
-                                    },
-                                    // Можно добавить еще один уровень вложенности, если нужно
-                                },
-                            },
-                        },
-                    },
-                },
-            },
         },
+    });
+
+    // Загружаем ВСЕ комменты плоским списком
+    const comments = await prisma.comment.findMany({
+        where: { postId: postId as string },
+        include: {
+            author: { select: { username: true, id: true } },
+        },
+        // Сортировка по дате, чтобы сохранить хронологию
+        orderBy: { createdAt: "asc" },
     });
 
     if (!post) {
@@ -60,12 +41,14 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     return {
         props: {
             post: JSON.parse(JSON.stringify(post)),
+            comments: JSON.parse(JSON.stringify(comments)), // Передаем плоский список
         },
     };
 };
 
 export default function PostPage({
     post,
+    comments,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
     // Формируем объект с информацией о посте, который будем передавать комментариям
     const postInfo = {
@@ -88,20 +71,11 @@ export default function PostPage({
             {/* Секция с комментариями */}
             <div className="mt-4 rounded-md bg-white p-4 shadow">
                 <h3 className="text-lg font-semibold mb-4">
-                    Комментарии ({post.comments.length})
+                    Комментарии ({comments.length})
                 </h3>
-                {post.comments.length > 0 ? (
-                    <div className="flex flex-col gap-4">
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {post.comments.map((comment: any) => (
-                            // Передаем postInfo в каждый комментарий верхнего уровня
-                            <Comment
-                                key={comment.id}
-                                comment={comment}
-                                postInfo={postInfo}
-                            />
-                        ))}
-                    </div>
+                {comments.length > 0 ? (
+                    // Используем CommentTree
+                    <CommentTree comments={comments} postInfo={postInfo} />
                 ) : (
                     <p className="text-gray-500">
                         Здесь пока нет комментариев.

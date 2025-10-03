@@ -1,5 +1,9 @@
-import { VoteClient } from "./VoteClient";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { VoteClient } from "./VoteClient";
+import { useAppSelector } from "@/store/hooks";
+import { useRouter } from "next/router";
+import { MoreHorizontal } from "lucide-react"; // Иконка для меню
 
 // Создаем и ЭКСПОРТИРУЕМ тип, описывающий пост
 export type PostForCard = {
@@ -9,12 +13,12 @@ export type PostForCard = {
     createdAt: string; // Даты после JSON.stringify становятся строками
     author: {
         username: string;
+        id: string; // Нам нужен ID автора для проверки
     };
 
     // Добавляем голоса
     votes: {
         userId: string;
-        postId: string;
         type: "UP" | "DOWN";
     }[];
 
@@ -29,6 +33,83 @@ type PostCardProps = {
 };
 
 export const PostCard = ({ post }: PostCardProps) => {
+    const router = useRouter();
+    const { user } = useAppSelector((state) => state.auth);
+    const isAuthor = user?.id === post.author.id;
+
+    // Состояния для режима редактирования
+    const [isEditing, setIsEditing] = useState(false);
+    const [editedContent, setEditedContent] = useState(post.content || "");
+    const [editedTitle, setEditedTitle] = useState(post.title);
+    const [isLoading, setIsLoading] = useState(false);
+
+    // Состояние для меню действий (редактировать/удалить)
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const menuRef = useRef<HTMLDivElement>(null);
+
+    // Закрытие меню по клику вне его
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (
+                menuRef.current &&
+                !menuRef.current.contains(event.target as Node)
+            ) {
+                setIsMenuOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () =>
+            document.removeEventListener("mousedown", handleClickOutside);
+    }, [menuRef]);
+
+    // Обработчик для сохранения изменений
+    const handleUpdate = async () => {
+        setIsLoading(true);
+        try {
+            await fetch("/api/posts/update", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                // Отправляем и title, и content
+                body: JSON.stringify({
+                    postId: post.id,
+                    title: editedTitle,
+                    content: editedContent,
+                }),
+                credentials: "include",
+            });
+            setIsEditing(false);
+            router.replace(router.asPath); // Перезагружаем данные страницы для отображения изменений
+        } catch (error) {
+            console.error("Failed to update post", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Обработчик для удаления поста
+    const handleDelete = async () => {
+        if (!confirm("Вы уверены, что хотите удалить этот пост?")) return;
+        setIsLoading(true);
+        try {
+            await fetch("/api/posts/delete", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ postId: post.id }),
+                credentials: "include",
+            });
+            // Если мы на странице поста, редиректим, иначе просто обновляем ленту
+            if (router.pathname.includes("/post/")) {
+                router.push(`/s/${post.community.slug}`);
+            } else {
+                router.replace(router.asPath);
+            }
+        } catch (error) {
+            console.error("Failed to delete post", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const postDate = new Date(post.createdAt).toLocaleDateString("ru-RU", {
         day: "numeric",
         month: "long",
@@ -36,15 +117,15 @@ export const PostCard = ({ post }: PostCardProps) => {
     });
 
     return (
-        <div className="rounded-md border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md">
+        <div className="flex rounded-md border border-gray-200 bg-white shadow-sm">
             {/* Вертикальный блок для голосования */}
-            <div className="flex flex-col items-center p-2 bg-gray-50">
+            <div className="flex flex-col items-center p-2 bg-gray-50 rounded-l-md">
                 <VoteClient initialVotes={post.votes} postId={post.id} />
             </div>
 
             {/* Основной контент поста */}
-            <div className="flex-grow">
-                <div className="p-4">
+            <div className="flex-grow p-4">
+                <div className="flex justify-between items-start">
                     <div className="mb-2 text-xs text-gray-500">
                         <span>
                             Опубликовал{" "}
@@ -57,20 +138,93 @@ export const PostCard = ({ post }: PostCardProps) => {
                             • {postDate}
                         </span>
                     </div>
-                    <Link href={`/s/${post.community.slug}/post/${post.id}`}>
-                        <h2 className="mb-2 text-xl font-bold hover:underline">
-                            {post.title}
-                        </h2>
-                    </Link>
-                    {post.content && (
-                        <p className="text-gray-700">{post.content}</p>
+                    {/* Меню действий для автора */}
+                    {isAuthor && !isEditing && (
+                        <div className="relative" ref={menuRef}>
+                            <button
+                                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                                className="p-1 rounded-full hover:bg-gray-100"
+                            >
+                                <MoreHorizontal className="h-5 w-5 text-gray-500" />
+                            </button>
+                            {isMenuOpen && (
+                                <div className="absolute right-0 mt-1 w-32 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5">
+                                    <div className="py-1">
+                                        <button
+                                            onClick={() => {
+                                                setIsEditing(true);
+                                                setIsMenuOpen(false);
+                                            }}
+                                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                        >
+                                            Редактировать
+                                        </button>
+                                        <button
+                                            onClick={handleDelete}
+                                            className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                                        >
+                                            Удалить
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     )}
                 </div>
-                <div className="border-t border-gray-100 bg-gray-50 px-4 py-2">
-                    <span className="text-sm font-semibold text-gray-600">
-                        Комментарии
-                    </span>
-                </div>
+
+                {/* Логика отображения */}
+                {isEditing ? (
+                    <div className="flex flex-col gap-2">
+                        <input
+                            type="text"
+                            value={editedTitle}
+                            onChange={(e) => setEditedTitle(e.target.value)}
+                            className="w-full rounded-md border border-gray-300 p-2 text-lg font-bold"
+                        />
+                        <textarea
+                            value={editedContent}
+                            onChange={(e) => setEditedContent(e.target.value)}
+                            className="w-full rounded-md border border-gray-300 p-2 text-sm"
+                            rows={5}
+                        />
+                        <div className="mt-2 flex gap-2">
+                            <button
+                                onClick={handleUpdate}
+                                disabled={
+                                    isLoading || editedTitle.trim().length === 0
+                                }
+                                className="rounded bg-blue-600 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+                            >
+                                {isLoading ? "Сохранение..." : "Сохранить"}
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setIsEditing(false);
+                                    setEditedTitle(post.title);
+                                    setEditedContent(post.content || "");
+                                }}
+                                className="rounded bg-gray-200 px-3 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-300"
+                            >
+                                Отмена
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <>
+                        <Link
+                            href={`/s/${post.community.slug}/post/${post.id}`}
+                        >
+                            <h2 className="mb-2 text-xl font-bold hover:underline">
+                                {post.title}
+                            </h2>
+                        </Link>
+                        {post.content && (
+                            <p className="text-gray-700 whitespace-pre-wrap">
+                                {post.content}
+                            </p>
+                        )}
+                    </>
+                )}
             </div>
         </div>
     );

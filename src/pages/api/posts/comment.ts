@@ -31,6 +31,28 @@ export default async function handler(
                 .json({ message: "Post ID and text are required" });
         }
 
+        // Если это ответ на другой комментарий (replyToId существует)
+        if (replyToId) {
+            // Находим родительский комментарий, чтобы узнать ID его автора
+            const parentComment = await prisma.comment.findUnique({
+                where: { id: replyToId },
+                select: { authorId: true },
+            });
+
+            // Создаем уведомление, ТОЛЬКО если пользователь не отвечает сам себе
+            if (parentComment && parentComment.authorId !== userId) {
+                await prisma.notification.create({
+                    data: {
+                        type: "NEW_REPLY",
+                        recipientId: parentComment.authorId, // Получатель - автор родительского коммента
+                        senderId: userId, // Отправитель - текущий юзер
+                        postId: postId,
+                        commentId: replyToId, // Ссылка на родительский коммент
+                    },
+                });
+            }
+        }
+
         const comment = await prisma.comment.create({
             data: {
                 text,
