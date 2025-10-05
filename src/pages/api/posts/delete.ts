@@ -29,26 +29,49 @@ export default async function handler(
             return res.status(400).json({ message: "Post ID is required" });
         }
 
-        // 1. Находим пост, чтобы проверить автора
+        // Находим пост, чтобы проверить автора
         const post = await prisma.post.findUnique({
             where: { id: postId },
-            select: { authorId: true }, // Запрашиваем только ID автора для проверки
+            select: { authorId: true },
         });
+        if (!post) return res.status(404).json({ message: "Post not found" });
+        if (post.authorId !== userId)
+            return res.status(403).json({ message: "Not authorized" });
 
-        if (!post) {
-            return res.status(404).json({ message: "Post not found" });
-        }
+        await prisma.$transaction(async (tx) => {
+            // 1. Сначала удаляем все, что напрямую ссылается на Пост, КРОМЕ КОММЕНТАРИЕВ
+            await tx.vote.deleteMany({ where: { postId: postId } });
 
-        // 2. Проверяем права доступа
-        if (post.authorId !== userId) {
-            return res.status(403).json({
-                message: "You are not authorized to delete this post",
+            // 2. Получаем ID всех комментариев к этому посту
+            const comments = await tx.comment.findMany({
+                where: { postId: postId },
+                select: { id: true },
             });
-        }
+            const commentIds = comments.map((c) => c.id);
 
-        // 3. Удаляем пост. Prisma автоматически удалит связанные голоса и комменты (из-за onDelete: Cascade)
-        await prisma.post.delete({
-            where: { id: postId },
+            // 3. Удаляем уведомления, связанные с постом ИЛИ с его комментариями
+            await tx.notification.deleteMany({
+                where: {
+                    OR: [{ postId: postId }, { commentId: { in: commentIds } }],
+                },
+            });
+
+            // Этот запрос рекурсивно находит и удаляет все комментарии, начиная с самых глубоких
+            await tx.$executeRaw`
+            WITH RECURSIVE "CommentHierarchy" AS (
+            SELECT id FROM "Comment" WHERE "postId" = ${postId}
+            UNION ALL
+            SELECT c.id FROM "Comment" c
+            INNER JOIN "CommentHierarchy" ch ON c."replyToId" = ch.id
+            )
+            DELETE FROM "Comment"
+            WHERE id IN (SELECT id FROM "CommentHierarchy");
+        `;
+
+            // 5. Наконец, удаляем сам пост
+            await tx.post.delete({
+                where: { id: postId },
+            });
         });
 
         return res.status(200).json({ message: "Post deleted successfully" });

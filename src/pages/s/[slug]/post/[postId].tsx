@@ -2,7 +2,7 @@ import { PostCard } from "@/components/posts/PostCard";
 import { PrismaClient } from "@prisma/client";
 import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import { CommentForm } from "@/components/comments/CommentForm";
-import { CommentTree } from "@/components/comments/CommentTree"; // Импортируем CommentTree
+import { Comment } from "@/components/comments/Comment";
 
 const prisma = new PrismaClient();
 
@@ -24,15 +24,24 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         },
     });
 
-    // Загружаем ВСЕ комменты плоским списком
+    // Загружаем все комментарии плоским списком
     const comments = await prisma.comment.findMany({
         where: { postId: postId as string },
+        orderBy: { createdAt: "asc" },
         include: {
             author: { select: { username: true, id: true } },
+            replyTo: {
+                select: {
+                    text: true,
+                    author: {
+                        select: { username: true },
+                    },
+                },
+            },
         },
-        // Сортировка по дате, чтобы сохранить хронологию
-        orderBy: { createdAt: "asc" },
     });
+
+    const commentsCount = comments.length;
 
     if (!post) {
         return { notFound: true };
@@ -41,7 +50,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     return {
         props: {
             post: JSON.parse(JSON.stringify(post)),
-            comments: JSON.parse(JSON.stringify(comments)), // Передаем плоский список
+            comments: JSON.parse(JSON.stringify(comments)),
+            commentsCount,
         },
     };
 };
@@ -49,8 +59,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 export default function PostPage({
     post,
     comments,
+    commentsCount,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
-    // Формируем объект с информацией о посте, который будем передавать комментариям
     const postInfo = {
         postId: post.id,
         authorId: post.author.id,
@@ -68,14 +78,25 @@ export default function PostPage({
             {/* Форма для нового комментария */}
             <CommentForm postId={post.id} />
 
-            {/* Секция с комментариями */}
-            <div className="mt-4 rounded-md bg-white p-4 shadow">
+            <div
+                id="comments-section"
+                className="mt-4 rounded-md bg-white p-4 shadow"
+            >
                 <h3 className="text-lg font-semibold mb-4">
-                    Комментарии ({comments.length})
+                    Комментарии ({commentsCount})
                 </h3>
                 {comments.length > 0 ? (
-                    // Используем CommentTree
-                    <CommentTree comments={comments} postInfo={postInfo} />
+                    <div className="flex flex-col gap-4">
+                        {/* eslint-disable-next-line
+                        @typescript-eslint/no-explicit-any */}
+                        {comments.map((comment: any) => (
+                            <Comment
+                                key={comment.id}
+                                comment={comment}
+                                postInfo={postInfo}
+                            />
+                        ))}
+                    </div>
                 ) : (
                     <p className="text-gray-500">
                         Здесь пока нет комментариев.

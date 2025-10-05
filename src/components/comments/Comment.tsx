@@ -1,12 +1,26 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useRouter } from "next/router";
 import { MessageSquareReply } from "lucide-react"; // Иконка ответа
 import Link from "next/link";
 import { useAppSelector } from "@/store/hooks";
 import toast from "react-hot-toast";
-import type { CommentNode } from "./CommentTree"; // Импортируем тип
 
-// Тип для информации о посте, которую мы будем "прокидывать"
+// Тип для комментария из плоского списка
+type CommentData = {
+    id: string;
+    text: string;
+    createdAt: string;
+    author: { username: string; id: string };
+    replyToId: string | null; // ID родительского коммента
+    // Содержит инфу о родительском комменте, если это ответ
+    replyTo: {
+        text: string;
+        author: {
+            username: string;
+        };
+    } | null;
+};
+
 export type PostInfo = {
     postId: string;
     authorId: string;
@@ -17,7 +31,7 @@ export type PostInfo = {
 };
 
 type CommentProps = {
-    comment: CommentNode;
+    comment: CommentData;
     postInfo: PostInfo;
 };
 
@@ -26,7 +40,7 @@ const RoleBadge = ({
     comment,
     postInfo,
 }: {
-    comment: CommentNode;
+    comment: CommentData;
     postInfo: PostInfo;
 }) => {
     const authorId = comment.author.id;
@@ -81,9 +95,9 @@ export const Comment = ({ comment, postInfo }: CommentProps) => {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                postId: postInfo.postId, // Берем ID из postInfo
+                postId: postInfo.postId,
                 text: replyText,
-                replyToId: comment.id, // Указываем, на какой коммент отвечаем
+                replyToId: comment.id,
             }),
             credentials: "include",
         });
@@ -130,27 +144,46 @@ export const Comment = ({ comment, postInfo }: CommentProps) => {
         }
     };
 
-    // "Показать еще"
-    const REPLIES_PER_CLICK = 3;
-    const [visibleRepliesCount, setVisibleRepliesCount] =
-        useState(REPLIES_PER_CLICK);
-
-    // Сортируем ответы один раз и запоминаем результат
-    const sortedReplies = useMemo(() => {
-        return comment.replies.sort(
-            (a, b) =>
-                new Date(a.createdAt).getTime() -
-                new Date(b.createdAt).getTime()
-        );
-    }, [comment.replies]);
-
-    const visibleReplies = sortedReplies.slice(0, visibleRepliesCount);
-    const hiddenRepliesCount = sortedReplies.length - visibleRepliesCount;
+    // Функция для плавного скролла к комментарию
+    const scrollToComment = (commentId: string) => {
+        const element = document.getElementById(`comment-${commentId}`);
+        if (element) {
+            element.scrollIntoView({ behavior: "smooth", block: "center" });
+            // Добавляем легкую подсветку для наглядности
+            element.classList.add(
+                "bg-blue-50",
+                "transition-colors",
+                "duration-1000"
+            );
+            setTimeout(() => {
+                element.classList.remove("bg-blue-50");
+            }, 1000);
+        }
+    };
 
     return (
-        <div className="flex flex-col">
-            {/* Сам комментарий */}
-            <div className="rounded-md bg-gray-50 p-3">
+        <div id={`comment-${comment.id}`} className="flex flex-col">
+            {comment.replyTo && (
+                <div
+                    onClick={() => scrollToComment(comment.replyToId!)} // Скролл по клику
+                    className="mb-1 cursor-pointer rounded-t-md border border-b-0 border-gray-200 bg-gray-100 p-2 text-xs text-gray-600 hover:bg-gray-200"
+                >
+                    <span className="font-semibold">
+                        Ответ п/{comment.replyTo.author.username}:
+                    </span>
+                    <p className="truncate italic">
+                        &quot;{comment.replyTo.text}&quot;
+                    </p>
+                </div>
+            )}
+
+            <div
+                className={`p-3 ${
+                    comment.replyTo
+                        ? "rounded-b-md bg-white border border-gray-200"
+                        : "rounded-md bg-gray-50"
+                }`}
+            >
                 <div className="flex items-start justify-between">
                     <div className="flex items-center text-xs text-gray-500 mb-1">
                         <Link
@@ -229,7 +262,7 @@ export const Comment = ({ comment, postInfo }: CommentProps) => {
 
             {/* Форма ответа (появляется по клику) */}
             {isReplying && (
-                <form onSubmit={handleReplySubmit} className="ml-5 mt-2">
+                <form onSubmit={handleReplySubmit} className="mt-2">
                     <textarea
                         value={replyText}
                         onChange={(e) => setReplyText(e.target.value)}
@@ -255,36 +288,6 @@ export const Comment = ({ comment, postInfo }: CommentProps) => {
                         </button>
                     </div>
                 </form>
-            )}
-
-            {/* Умный рендер ответов */}
-            {sortedReplies.length > 0 && (
-                <div className="ml-5 mt-3 flex flex-col gap-3 border-l-2 border-gray-200 pl-4">
-                    {/* Рендерим только видимую часть ответов */}
-                    {visibleReplies.map((reply) => (
-                        <Comment
-                            key={reply.id}
-                            comment={reply}
-                            postInfo={postInfo}
-                        />
-                    ))}
-
-                    {/* Если есть скрытые ответы, показываем кнопку */}
-                    {hiddenRepliesCount > 0 && (
-                        <button
-                            onClick={() =>
-                                setVisibleRepliesCount(
-                                    (prev) => prev + REPLIES_PER_CLICK
-                                )
-                            }
-                            className="text-left text-xs font-bold text-blue-600 hover:underline p-2"
-                        >
-                            Показать еще{" "}
-                            {Math.min(hiddenRepliesCount, REPLIES_PER_CLICK)}{" "}
-                            {hiddenRepliesCount > 1 ? "ответа" : "ответ"}
-                        </button>
-                    )}
-                </div>
             )}
         </div>
     );
