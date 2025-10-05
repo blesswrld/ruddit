@@ -149,7 +149,10 @@ export const Header = () => {
             <nav className="container mx-auto flex h-16 items-center justify-between gap-6 px-4">
                 <div className="flex items-center gap-6">
                     {/* Логотип */}
-                    <Link href="/" className="text-xl font-bold text-gray-800">
+                    <Link
+                        href="/"
+                        className="text-xl font-bold text-gray-800 hover:text-blue-600"
+                    >
                         Ruddit
                     </Link>
                     {/* Ссылка на сообщества */}
