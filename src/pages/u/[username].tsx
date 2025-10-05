@@ -9,7 +9,7 @@ import {
     Send,
     Youtube,
     Link as LinkIcon,
-    CaseUpper,
+    Music2,
 } from "lucide-react";
 
 const prisma = new PrismaClient();
@@ -109,7 +109,7 @@ export default function UserProfilePage({
                                 className="text-gray-500 hover:text-blue-500"
                                 title="Telegram"
                             >
-                                <Send />
+                                <Send className="w-auto h-5" />
                             </a>
                         )}
                         {user.linkInstagram && (
@@ -120,7 +120,7 @@ export default function UserProfilePage({
                                 className="text-gray-500 hover:text-pink-500"
                                 title="Instagram"
                             >
-                                <Instagram />
+                                <Instagram className="w-auto h-5" />
                             </a>
                         )}
                         {user.linkYouTube && (
@@ -131,7 +131,7 @@ export default function UserProfilePage({
                                 className="text-gray-500 hover:text-red-600"
                                 title="YouTube"
                             >
-                                <Youtube />
+                                <Youtube className="w-auto h-5" />
                             </a>
                         )}
                         {user.linkTikTok && (
@@ -142,7 +142,7 @@ export default function UserProfilePage({
                                 className="text-gray-500 hover:text-black"
                                 title="TikTok"
                             >
-                                <CaseUpper />
+                                <Music2 className="w-auto h-5" />
                             </a>
                         )}
                         {user.linkCustomUrl && user.linkCustomName && (
