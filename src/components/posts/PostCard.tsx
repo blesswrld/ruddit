@@ -47,6 +47,9 @@ export const PostCard = ({ post }: PostCardProps) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
+    const TITLE_MAX_LENGTH = 70;
+    const CONTENT_MAX_LENGTH = 5000;
+
     // Закрытие меню по клику вне его
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -175,23 +178,57 @@ export const PostCard = ({ post }: PostCardProps) => {
                 {/* Логика отображения */}
                 {isEditing ? (
                     <div className="flex flex-col gap-2">
-                        <input
-                            type="text"
-                            value={editedTitle}
-                            onChange={(e) => setEditedTitle(e.target.value)}
-                            className="w-full rounded-md border border-gray-300 p-2 text-lg font-bold"
-                        />
-                        <textarea
-                            value={editedContent}
-                            onChange={(e) => setEditedContent(e.target.value)}
-                            className="w-full rounded-md border border-gray-300 p-2 text-sm"
-                            rows={5}
-                        />
+                        {/* Добавляем счетчик для заголовка */}
+                        <div>
+                            <input
+                                type="text"
+                                value={editedTitle}
+                                onChange={(e) => setEditedTitle(e.target.value)}
+                                maxLength={TITLE_MAX_LENGTH}
+                                className="w-full rounded-md border border-gray-300 p-2 text-lg font-bold"
+                            />
+                            <p
+                                className={`mt-1 text-right text-xs ${
+                                    editedTitle.length >= TITLE_MAX_LENGTH
+                                        ? "text-red-500"
+                                        : "text-gray-500"
+                                }`}
+                            >
+                                {editedTitle.length} / {TITLE_MAX_LENGTH}
+                            </p>
+                        </div>
+
+                        {/* Добавляем счетчик для текста */}
+                        <div>
+                            <textarea
+                                value={editedContent}
+                                onChange={(e) =>
+                                    setEditedContent(e.target.value)
+                                }
+                                maxLength={CONTENT_MAX_LENGTH}
+                                className="w-full rounded-md border border-gray-300 p-2 text-sm"
+                                rows={5}
+                            />
+                            <p
+                                className={`mt-1 text-right text-xs ${
+                                    editedContent.length >= CONTENT_MAX_LENGTH
+                                        ? "text-red-500"
+                                        : "text-gray-500"
+                                }`}
+                            >
+                                {editedContent.length} / {CONTENT_MAX_LENGTH}
+                            </p>
+                        </div>
+
                         <div className="mt-2 flex gap-2">
                             <button
                                 onClick={handleUpdate}
+                                // Добавляем проверку длины в disabled
                                 disabled={
-                                    isLoading || editedTitle.trim().length === 0
+                                    isLoading ||
+                                    editedTitle.trim().length === 0 ||
+                                    editedTitle.length > TITLE_MAX_LENGTH ||
+                                    editedContent.length > CONTENT_MAX_LENGTH
                                 }
                                 className="rounded bg-blue-600 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
                             >
@@ -214,12 +251,12 @@ export const PostCard = ({ post }: PostCardProps) => {
                         <Link
                             href={`/s/${post.community.slug}/post/${post.id}`}
                         >
-                            <h2 className="mb-2 text-xl font-bold hover:underline">
+                            <h2 className="mb-2 text-xl break-all font-bold hover:underline">
                                 {post.title}
                             </h2>
                         </Link>
                         {post.content && (
-                            <p className="text-gray-700 whitespace-pre-wrap">
+                            <p className="text-gray-700 break-all whitespace-pre-wrap">
                                 {post.content}
                             </p>
                         )}

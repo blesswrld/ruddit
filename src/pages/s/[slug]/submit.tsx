@@ -1,5 +1,4 @@
 import { Button } from "@/components/common/Button";
-import { Input } from "@/components/common/Input";
 import type { GetServerSideProps } from "next";
 import { useRouter } from "next/router";
 import { useState } from "react";
@@ -7,12 +6,12 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-// Нам нужно передать ID сообщества на страницу для отправки формы
+// Нам нужно передать ID и имя сообщества на страницу
 export const getServerSideProps = (async (context) => {
     const { slug } = context.params!;
     const community = await prisma.community.findUnique({
         where: { slug: slug as string },
-        select: { id: true, name: true },
+        select: { id: true, name: true, slug: true }, // Добавим slug для редиректа
     });
 
     if (!community) {
@@ -25,15 +24,19 @@ type SubmitPageProps = {
     community: {
         id: string;
         name: string;
+        slug: string;
     };
 };
 
-export default function SubmitPage({ community }: SubmitPageProps) {
+export default function CommunitySubmitPage({ community }: SubmitPageProps) {
     const router = useRouter();
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    const TITLE_MAX_LENGTH = 70;
+    const CONTENT_MAX_LENGTH = 5000;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -54,11 +57,11 @@ export default function SubmitPage({ community }: SubmitPageProps) {
 
             const data = await response.json();
             if (!response.ok) {
-                throw new Error(data.message);
+                throw new Error(data.message || "Не удалось создать пост");
             }
 
             // Перенаправляем на страницу сообщества после успеха
-            router.push(`/s/${router.query.slug}`);
+            router.push(`/s/${community.slug}`);
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (err: any) {
             setError(err.message);
@@ -74,15 +77,36 @@ export default function SubmitPage({ community }: SubmitPageProps) {
             </h1>
             <hr className="mb-4" />
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                <Input
-                    id="post-title"
-                    label="Заголовок"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    disabled={isLoading}
-                    required
-                    maxLength={300}
-                />
+                {/* Заголовок с счетчиком */}
+                <div>
+                    <label
+                        htmlFor="post-title"
+                        className="mb-1 block text-sm font-medium text-gray-700"
+                    >
+                        Заголовок
+                    </label>
+                    <input
+                        id="post-title"
+                        type="text"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        required
+                        maxLength={TITLE_MAX_LENGTH}
+                        disabled={isLoading}
+                        className="w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                    <p
+                        className={`mt-1 text-right text-xs ${
+                            title.length >= TITLE_MAX_LENGTH
+                                ? "text-red-500"
+                                : "text-gray-500"
+                        }`}
+                    >
+                        {title.length} / {TITLE_MAX_LENGTH}
+                    </p>
+                </div>
+
+                {/* Текст с счетчиком */}
                 <div>
                     <label
                         htmlFor="post-content"
@@ -96,8 +120,18 @@ export default function SubmitPage({ community }: SubmitPageProps) {
                         onChange={(e) => setContent(e.target.value)}
                         disabled={isLoading}
                         rows={10}
-                        className="w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        maxLength={CONTENT_MAX_LENGTH}
+                        className="w-full rounded-md border border-gray-300 p-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                     />
+                    <p
+                        className={`mt-1 text-right text-xs ${
+                            content.length >= CONTENT_MAX_LENGTH
+                                ? "text-red-500"
+                                : "text-gray-500"
+                        }`}
+                    >
+                        {content.length} / {CONTENT_MAX_LENGTH}
+                    </p>
                 </div>
 
                 {error && <p className="text-sm text-red-500">{error}</p>}
@@ -105,7 +139,12 @@ export default function SubmitPage({ community }: SubmitPageProps) {
                 <div className="flex justify-end">
                     <Button
                         type="submit"
-                        disabled={isLoading}
+                        disabled={
+                            isLoading ||
+                            title.trim().length === 0 ||
+                            title.length > TITLE_MAX_LENGTH ||
+                            content.length > CONTENT_MAX_LENGTH
+                        }
                         className="w-auto"
                     >
                         {isLoading ? "Публикация..." : "Опубликовать"}

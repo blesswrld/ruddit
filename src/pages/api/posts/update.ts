@@ -23,17 +23,31 @@ export default async function handler(
 
     try {
         const { userId } = verify(token, process.env.JWT_SECRET!) as JwtPayload;
-        const { postId, content, title } = req.body;
+        // Получаем только те данные, которые нужны для обновления поста
+        const { postId, title, content } = req.body;
 
-        if (!postId || content === undefined) {
+        // Валидация для поста
+        if (!postId || title === undefined || content === undefined) {
             return res
                 .status(400)
-                .json({ message: "Post ID and content are required" });
+                .json({ message: "Post ID, title, and content are required" });
         }
 
         // Добавляем валидацию для заголовка
         if (title.trim().length === 0) {
-            return res.status(400).json({ message: "Title cannot be empty" });
+            return res
+                .status(400)
+                .json({ message: "Заголовок не может быть пустым." });
+        }
+        if (title.length > 70) {
+            return res.status(400).json({
+                message: "Заголовок не может быть длиннее 70 символов.",
+            });
+        }
+        if (content && content.length > 5000) {
+            return res.status(400).json({
+                message: "Текст поста не может быть длиннее 5000 символов.",
+            });
         }
 
         const post = await prisma.post.findUnique({

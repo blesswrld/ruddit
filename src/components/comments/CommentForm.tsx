@@ -17,6 +17,8 @@ export const CommentForm = ({ postId }: CommentFormProps) => {
     const [text, setText] = useState("");
     const [isLoading, setIsLoading] = useState(false);
 
+    const CONTENT_MAX_LENGTH = 5000;
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (text.trim() === "") return;
@@ -64,11 +66,27 @@ export const CommentForm = ({ postId }: CommentFormProps) => {
                             rows={3}
                             placeholder="Что думаете?"
                             disabled={isLoading}
+                            maxLength={CONTENT_MAX_LENGTH} // 1. Атрибут
                         />
+                        {/* 2. Счетчик */}
+                        <p
+                            className={`mt-1 text-right text-xs ${
+                                text.length >= CONTENT_MAX_LENGTH
+                                    ? "text-red-500"
+                                    : "text-gray-500"
+                            }`}
+                        >
+                            {text.length} / {CONTENT_MAX_LENGTH}
+                        </p>
                         <div className="mt-2 flex justify-end">
                             <button
                                 type="submit"
-                                disabled={isLoading || text.trim() === ""}
+                                // 3. Блокировка кнопки
+                                disabled={
+                                    isLoading ||
+                                    text.trim() === "" ||
+                                    text.length > CONTENT_MAX_LENGTH
+                                }
                                 className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
                             >
                                 {isLoading ? "Отправка..." : "Отправить"}

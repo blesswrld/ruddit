@@ -25,10 +25,14 @@ export default async function handler(
         const { userId } = verify(token, process.env.JWT_SECRET!) as JwtPayload;
         const { postId, text, replyToId } = req.body;
 
-        if (!postId || !text || text.trim() === "") {
-            return res
-                .status(400)
-                .json({ message: "Post ID and text are required" });
+        if (!text || text.trim() === "") {
+            return res.status(400).json({ message: "Text are required" });
+        }
+
+        if (text.length > 5000) {
+            return res.status(400).json({
+                message: "Комментарий не может быть длиннее 5000 символов.",
+            });
         }
 
         // Если это ответ на другой комментарий (replyToId существует)

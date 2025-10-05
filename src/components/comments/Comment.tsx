@@ -86,6 +86,8 @@ export const Comment = ({ comment, postInfo }: CommentProps) => {
     const [editedText, setEditedText] = useState(comment.text);
     const [isLoading, setIsLoading] = useState(false);
 
+    const CONTENT_MAX_LENGTH = 5000;
+
     const handleReplySubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (replyText.trim() === "") return;
@@ -226,7 +228,18 @@ export const Comment = ({ comment, postInfo }: CommentProps) => {
                             onChange={(e) => setEditedText(e.target.value)}
                             className="w-full rounded-md border border-gray-300 p-2 text-sm"
                             rows={3}
+                            maxLength={CONTENT_MAX_LENGTH} // 1. Атрибут
                         />
+                        {/* 2. Счетчик */}
+                        <p
+                            className={`mt-1 text-right text-xs ${
+                                editedText.length >= CONTENT_MAX_LENGTH
+                                    ? "text-red-500"
+                                    : "text-gray-500"
+                            }`}
+                        >
+                            {editedText.length} / {CONTENT_MAX_LENGTH}
+                        </p>
                         <div className="mt-1 flex items-center justify-end gap-2">
                             <button
                                 onClick={() => setIsEditing(false)}
@@ -236,7 +249,12 @@ export const Comment = ({ comment, postInfo }: CommentProps) => {
                             </button>
                             <button
                                 onClick={handleUpdate}
-                                disabled={isLoading || editedText.trim() === ""}
+                                // 3. Блокировка
+                                disabled={
+                                    isLoading ||
+                                    editedText.trim() === "" ||
+                                    editedText.length > CONTENT_MAX_LENGTH
+                                }
                                 className="rounded-full bg-blue-500 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-600 disabled:opacity-50"
                             >
                                 {isLoading ? "..." : "Сохранить"}
@@ -262,7 +280,7 @@ export const Comment = ({ comment, postInfo }: CommentProps) => {
 
             {/* Форма ответа (появляется по клику) */}
             {isReplying && (
-                <form onSubmit={handleReplySubmit} className="mt-2">
+                <form onSubmit={handleReplySubmit} className="ml-5 mt-2">
                     <textarea
                         value={replyText}
                         onChange={(e) => setReplyText(e.target.value)}
@@ -270,7 +288,18 @@ export const Comment = ({ comment, postInfo }: CommentProps) => {
                         rows={2}
                         placeholder={`Ответ пользователю п/${comment.author.username}`}
                         disabled={isLoading}
+                        maxLength={CONTENT_MAX_LENGTH} // 1. Атрибут
                     />
+                    {/* 2. Счетчик */}
+                    <p
+                        className={`mt-1 text-right text-xs ${
+                            replyText.length >= CONTENT_MAX_LENGTH
+                                ? "text-red-500"
+                                : "text-gray-500"
+                        }`}
+                    >
+                        {replyText.length} / {CONTENT_MAX_LENGTH}
+                    </p>
                     <div className="mt-1 flex items-center justify-end gap-2">
                         <button
                             type="button"
@@ -281,7 +310,12 @@ export const Comment = ({ comment, postInfo }: CommentProps) => {
                         </button>
                         <button
                             type="submit"
-                            disabled={isLoading}
+                            // 3. Блокировка
+                            disabled={
+                                isLoading ||
+                                replyText.trim() === "" ||
+                                replyText.length > CONTENT_MAX_LENGTH
+                            }
                             className="rounded-full bg-blue-500 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-600 disabled:opacity-50"
                         >
                             {isLoading ? "..." : "Ответить"}

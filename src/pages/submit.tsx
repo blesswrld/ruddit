@@ -1,5 +1,4 @@
 import { Button } from "@/components/common/Button";
-import { Input } from "@/components/common/Input";
 import { PrismaClient } from "@prisma/client";
 import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import Link from "next/link";
@@ -68,6 +67,9 @@ export default function GlobalSubmitPage({
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    const TITLE_MAX_LENGTH = 70;
+    const CONTENT_MAX_LENGTH = 5000;
+
     // Если пользователь не подписан ни на одно сообщество, показываем сообщение
     if (communities.length === 0) {
         return (
@@ -121,7 +123,7 @@ export default function GlobalSubmitPage({
             if (community) {
                 router.push(`/s/${community.slug}`);
             } else {
-                router.push("/"); // На всякий случай, если что-то пошло не так
+                router.push("/");
             }
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (err: any) {
@@ -146,6 +148,7 @@ export default function GlobalSubmitPage({
                         id="community-select"
                         value={communityId}
                         onChange={(e) => setCommunityId(e.target.value)}
+                        disabled={isLoading}
                         className="w-full rounded-md border border-gray-300 p-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                     >
                         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
@@ -156,25 +159,75 @@ export default function GlobalSubmitPage({
                         ))}
                     </select>
                 </div>
-                <Input
-                    id="post-title"
-                    label="Заголовок"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    required
-                />
-                <textarea
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                    rows={10}
-                    placeholder="Текст (необязательно)"
-                    className="w-full rounded-md border border-gray-300 p-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
+
+                {/* ИСПОЛЬЗУЕМ ОБЫЧНЫЙ INPUT + P */}
+                <div>
+                    <label
+                        htmlFor="post-title"
+                        className="mb-1 block text-sm font-medium text-gray-700"
+                    >
+                        Заголовок
+                    </label>
+                    <input
+                        id="post-title"
+                        type="text"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        required
+                        maxLength={TITLE_MAX_LENGTH}
+                        disabled={isLoading}
+                        className="w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                    <p
+                        className={`mt-1 text-right text-xs ${
+                            title.length >= TITLE_MAX_LENGTH
+                                ? "text-red-500"
+                                : "text-gray-500"
+                        }`}
+                    >
+                        {title.length} / {TITLE_MAX_LENGTH}
+                    </p>
+                </div>
+
+                {/* ИСПОЛЬЗУЕМ ОБЫЧНЫЙ TEXTAREA + P */}
+                <div>
+                    <label
+                        htmlFor="post-content"
+                        className="mb-1 block text-sm font-medium text-gray-700"
+                    >
+                        Текст (необязательно)
+                    </label>
+                    <textarea
+                        id="post-content"
+                        value={content}
+                        onChange={(e) => setContent(e.target.value)}
+                        disabled={isLoading}
+                        rows={10}
+                        maxLength={CONTENT_MAX_LENGTH}
+                        className="w-full rounded-md border border-gray-300 p-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                    <p
+                        className={`mt-1 text-right text-xs ${
+                            content.length >= CONTENT_MAX_LENGTH
+                                ? "text-red-500"
+                                : "text-gray-500"
+                        }`}
+                    >
+                        {content.length} / {CONTENT_MAX_LENGTH}
+                    </p>
+                </div>
+
                 {error && <p className="text-red-500 text-sm">{error}</p>}
+
                 <div className="flex justify-end">
                     <Button
                         type="submit"
-                        disabled={isLoading}
+                        disabled={
+                            isLoading ||
+                            title.trim().length === 0 ||
+                            title.length > TITLE_MAX_LENGTH ||
+                            content.length > CONTENT_MAX_LENGTH
+                        }
                         className="w-auto"
                     >
                         {isLoading ? "Публикация..." : "Опубликовать"}
