@@ -13,6 +13,7 @@ interface User {
     linkTikTok?: string | null;
     linkCustomName?: string | null;
     linkCustomUrl?: string | null;
+    profileMusicUrl?: string | null;
 }
 
 interface AuthState {
@@ -62,12 +63,16 @@ const authSlice = createSlice({
             action: PayloadAction<{
                 bio?: string | null;
                 avatarUrl?: string | null;
+                profileMusicUrl?: string | null;
             }>
         ) => {
             if (state.user) {
                 state.user.bio = action.payload.bio ?? state.user.bio;
                 state.user.avatarUrl =
                     action.payload.avatarUrl ?? state.user.avatarUrl;
+                state.user.profileMusicUrl =
+                    action.payload.profileMusicUrl ??
+                    state.user.profileMusicUrl;
             }
         },
 

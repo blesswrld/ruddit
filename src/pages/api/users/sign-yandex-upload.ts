@@ -21,11 +21,12 @@ export default async function handler(
     }
 
     try {
-        const { filename, contentType } = req.body;
+        const { filename, contentType, folder = "avatars" } = req.body;
 
         // Генерируем уникальное имя файла, чтобы избежать перезаписи
         const randomString = crypto.randomBytes(8).toString("hex");
-        const key = `avatars/${randomString}-${filename}`;
+        // Используем 'folder' для пути
+        const key = `${folder}/${randomString}-${filename}`;
 
         const command = new PutObjectCommand({
             Bucket: process.env.NEXT_PUBLIC_YANDEX_BUCKET_NAME,

@@ -23,7 +23,7 @@ export default async function handler(
 
     try {
         const { userId } = verify(token, process.env.JWT_SECRET!) as JwtPayload;
-        const { bio, avatarUrl, links } = req.body;
+        const { bio, avatarUrl, links, profileMusicUrl } = req.body;
 
         // Валидация
         if (bio && typeof bio === "string" && bio.length > 210) {
@@ -56,6 +56,9 @@ export default async function handler(
                 linkTikTok: links?.tikTok || null,
                 linkCustomName: links?.customName || null,
                 linkCustomUrl: links?.customUrl || null,
+
+                // Сохраняем ссылку на музыку
+                profileMusicUrl: profileMusicUrl,
             },
         });
 

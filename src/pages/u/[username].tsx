@@ -1,9 +1,11 @@
 import { CommentCard } from "@/components/comments/CommentCard";
 import { PostCard } from "@/components/posts/PostCard";
+import { CustomAudioPlayer } from "@/components/common/CustomAudioPlayer";
 import { PrismaClient } from "@prisma/client";
 import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import { useState } from "react";
 import Link from "next/link";
+
 import {
     Instagram,
     Send,
@@ -156,6 +158,13 @@ export default function UserProfilePage({
                             </a>
                         )}
                     </div>
+
+                    {/* Аудиоплеер */}
+                    {user.profileMusicUrl && (
+                        <div className="mt-6 border-t pt-4">
+                            <CustomAudioPlayer src={user.profileMusicUrl} />
+                        </div>
+                    )}
                 </div>
             </div>
 

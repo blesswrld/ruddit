@@ -19,6 +19,9 @@ export default function ProfileSettingsPage() {
     const [file, setFile] = useState<File | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    const [musicFile, setMusicFile] = useState<File | null>(null);
+    const musicFileInputRef = useRef<HTMLInputElement>(null);
+
     // Состояние для всех ссылок
     const [links, setLinks] = useState({
         telegram: "",
@@ -44,6 +47,9 @@ export default function ProfileSettingsPage() {
             setFile(null);
             if (fileInputRef.current) fileInputRef.current.value = "";
             setMessage("");
+
+            setMusicFile(null);
+            if (musicFileInputRef.current) musicFileInputRef.current.value = "";
         }
     };
 
@@ -53,21 +59,6 @@ export default function ProfileSettingsPage() {
             resetForm();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user]);
-
-    // Заполняем состояние при загрузке данных
-    useEffect(() => {
-        if (user) {
-            setBio(user.bio || "");
-            setLinks({
-                telegram: user.linkTelegram || "",
-                instagram: user.linkInstagram || "",
-                youTube: user.linkYouTube || "",
-                tikTok: user.linkTikTok || "",
-                customName: user.linkCustomName || "",
-                customUrl: user.linkCustomUrl || "",
-            });
-        }
     }, [user]);
 
     // Функция для удобного обновления ссылок
@@ -95,6 +86,7 @@ export default function ProfileSettingsPage() {
         setMessage("");
 
         let uploadedAvatarUrl = user?.avatarUrl;
+        let uploadedMusicUrl = user?.profileMusicUrl;
 
         // 1. Если выбран новый файл, загружаем его
         if (file) {
@@ -136,6 +128,46 @@ export default function ProfileSettingsPage() {
             }
         }
 
+        // Загрузка музыки
+        if (musicFile) {
+            try {
+                const signResponse = await fetch(
+                    "/api/users/sign-yandex-upload",
+                    {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            filename: musicFile.name,
+                            contentType: musicFile.type,
+                            folder: "profile_music",
+                        }),
+                    }
+                );
+                if (!signResponse.ok)
+                    throw new Error(
+                        "Не удалось получить ссылку для загрузки музыки."
+                    );
+
+                const { signedUrl, publicUrl } = await signResponse.json();
+
+                // ВОТ ЭТОТ БЛОК ТЫ ПРОПУСТИЛ
+                const uploadResponse = await fetch(signedUrl, {
+                    method: "PUT",
+                    body: musicFile,
+                    headers: { "Content-Type": musicFile.type },
+                });
+                if (!uploadResponse.ok)
+                    throw new Error("Не удалось загрузить музыку в хранилище.");
+
+                uploadedMusicUrl = publicUrl;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } catch (error: any) {
+                setMessage(`Ошибка при загрузке музыки: ${error.message}`);
+                setIsLoading(false);
+                return;
+            }
+        }
+
         // 2. Сохраняем bio и новый URL аватара в нашей базе
         try {
             const response = await fetch("/api/users/profile", {
@@ -145,6 +177,7 @@ export default function ProfileSettingsPage() {
                     avatarUrl: uploadedAvatarUrl,
                     bio,
                     links,
+                    profileMusicUrl: uploadedMusicUrl, // Отправляем ссылку
                 }),
                 credentials: "include",
             });
@@ -296,6 +329,67 @@ export default function ProfileSettingsPage() {
                             placeholder="https://example.com"
                             disabled={isLoading}
                         />
+                    </div>
+                </div>
+
+                {/* Загрузка музыки */}
+                <div className="border-t pt-6">
+                    <h2 className="text-lg font-semibold">Музыка в профиле</h2>
+                    <p className="text-sm text-gray-500 mb-2">
+                        Загрузите один .mp3 файл, который будет играть в вашем
+                        профиле.
+                    </p>
+
+                    {/* Добавляем текущее имя файла */}
+                    <div className="flex items-center gap-4">
+                        {/* Иконка музыки */}
+                        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-500">
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="24"
+                                height="24"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            >
+                                <path d="M9 18V5l12-2v13" />
+                                <circle cx="6" cy="18" r="3" />
+                                <circle cx="18" cy="16" r="3" />
+                            </svg>
+                        </div>
+
+                        <div className="flex-grow">
+                            <label
+                                htmlFor="music-file-input"
+                                className="cursor-pointer rounded-md bg-white px-3 py-2 text-sm font-semibold text-blue-600 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+                            >
+                                <span>Выберите файл</span>
+                                <input
+                                    id="music-file-input"
+                                    type="file"
+                                    accept="audio/mpeg" // Только mp3
+                                    onChange={(e) =>
+                                        setMusicFile(
+                                            e.target.files
+                                                ? e.target.files[0]
+                                                : null
+                                        )
+                                    }
+                                    disabled={isLoading}
+                                    ref={musicFileInputRef}
+                                    className="sr-only"
+                                />
+                            </label>
+                            <span className="ml-3 text-sm text-gray-500">
+                                {musicFile?.name ||
+                                    (user?.profileMusicUrl
+                                        ? "Текущий трек загружен"
+                                        : "Файл не выбран")}
+                            </span>
+                        </div>
                     </div>
                 </div>
 

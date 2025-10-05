@@ -23,6 +23,8 @@ model User {
   linkCustomName     String? // Имя для кастомной ссылки
   linkCustomUrl      String? // URL для кастомной ссылки
   
+  profileMusicUrl    String?
+
   createdAt    DateTime @default(now()) // Дата создания
   updatedAt    DateTime @updatedAt // Дата обновления
 
