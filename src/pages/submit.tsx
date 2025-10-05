@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useState } from "react";
 import { verify } from "jsonwebtoken";
+import toast from "react-hot-toast";
 
 const prisma = new PrismaClient();
 
@@ -89,48 +90,58 @@ export default function GlobalSubmitPage({
         );
     }
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!communityId) {
             setError("Пожалуйста, выберите сообщество.");
+            toast.error("Пожалуйста, выберите сообщество.");
             return;
         }
         setIsLoading(true);
         setError(null);
 
-        try {
-            const response = await fetch("/api/posts/create", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    title,
-                    content,
-                    communityId,
+        toast
+            .promise(
+                fetch("/api/posts/create", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        title,
+                        content,
+                        communityId,
+                    }),
+                    credentials: "include",
+                }).then(async (response) => {
+                    if (!response.ok) {
+                        const data = await response.json();
+                        throw new Error(
+                            data.message || "Не удалось создать пост"
+                        );
+                    }
+                    return response.json();
                 }),
-                credentials: "include",
+                {
+                    loading: "Публикация поста...",
+                    success: () => {
+                        const community = communities.find(
+                            (c: CommunityForSubmit) => c.id === communityId
+                        );
+                        if (community) {
+                            router.push(`/s/${community.slug}`);
+                        } else {
+                            router.push("/");
+                        }
+                        return "Пост успешно опубликован!";
+                    },
+                    error: (err) => {
+                        setError(err.message);
+                        return `Ошибка: ${err.message}`;
+                    },
+                }
+            )
+            .finally(() => {
+                setIsLoading(false);
             });
-
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.message || "Не удалось создать пост");
-            }
-
-            // Находим слаг сообщества, чтобы сделать правильный редирект
-            // 2. Явно указываем тип для 'c'
-            const community = communities.find(
-                (c: CommunityForSubmit) => c.id === communityId
-            );
-            if (community) {
-                router.push(`/s/${community.slug}`);
-            } else {
-                router.push("/");
-            }
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (err: any) {
-            setError(err.message);
-        } finally {
-            setIsLoading(false);
-        }
     };
 
     return (
