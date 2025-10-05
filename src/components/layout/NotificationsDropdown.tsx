@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { Bell, Check } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/router"; // 1. Импортируем useRouter
 import { useState, useRef, useEffect } from "react";
 
 // Функция для получения уведомлений
@@ -23,6 +24,7 @@ const markAsRead = async (notificationId: string) => {
 
 export const NotificationsDropdown = () => {
     const queryClient = useQueryClient();
+    const router = useRouter(); // 2. Инициализируем роутер
     const [isOpen, setIsOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
@@ -44,6 +46,18 @@ export const NotificationsDropdown = () => {
             );
         },
     });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const handleNotificationClick = async (notif: any) => {
+        // Сначала отмечаем как прочитанное
+        await mutation.mutateAsync(notif.id);
+        // Затем закрываем меню
+        setIsOpen(false);
+        // И переходим на нужную страницу с якорем
+        router.push(
+            `/s/${notif.post.community.slug}/post/${notif.post.id}#comment-${notif.commentId}`
+        );
+    };
 
     // Закрытие по клику вне меню
     useEffect(() => {
@@ -111,6 +125,7 @@ export const NotificationsDropdown = () => {
                                 />
                                 <div className="text-sm flex-grow">
                                     <p>
+                                        {/* Имя пользователя отдельная ссылка */}
                                         <Link
                                             href={`/u/${notif.sender.username}`}
                                             className="font-bold hover:underline"
@@ -118,12 +133,15 @@ export const NotificationsDropdown = () => {
                                             {notif.sender.username}
                                         </Link>
                                         {" ответил на ваш комментарий в посте "}
-                                        <Link
-                                            href={`/s/${notif.post.community.slug}/post/${notif.post.id}#comment-${notif.commentId}`}
-                                            className="font-semibold text-blue-600 hover:underline"
+                                        {/* Название поста отдельная ссылка */}
+                                        <button
+                                            onClick={() =>
+                                                handleNotificationClick(notif)
+                                            }
+                                            className="font-semibold text-blue-600 hover:underline text-left"
                                         >
                                             {notif.post.title}
-                                        </Link>
+                                        </button>
                                     </p>
                                     <p className="text-xs text-gray-400 mt-1">
                                         {new Date(

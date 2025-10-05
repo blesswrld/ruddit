@@ -7,7 +7,20 @@ const config: Config = {
     ],
     theme: {
         extend: {
-            // Здесь мы в будущем сможем добавлять свои цвета, шрифты и т.д.
+            keyframes: {
+                highlight: {
+                    "0%": { backgroundColor: "rgba(59, 130, 246, 0.4)" },
+                    "100%": { backgroundColor: "transparent" },
+                },
+                "highlight-parent": {
+                    "0%": { backgroundColor: "rgba(59, 130, 246, 0.2)" },
+                    "100%": { backgroundColor: "transparent" },
+                },
+            },
+            animation: {
+                highlight: "highlight 3s ease-out",
+                "highlight-parent": "highlight-parent 3s ease-out",
+            },
         },
     },
     plugins: [],

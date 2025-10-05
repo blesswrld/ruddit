@@ -1,3 +1,13 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+    .highlight-comment {
+        @apply animate-highlight rounded-md; /* Добавим rounded-md для красоты */
+    }
+    /* Добавляем класс */
+    .highlight-parent-comment {
+        @apply animate-highlight-parent rounded-md;
+    }
+}
