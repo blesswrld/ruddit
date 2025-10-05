@@ -204,7 +204,7 @@ export const Comment = ({ comment, postInfo }: CommentProps) => {
                         </span>
                     </div>
                     {isAuthor && !isEditing && (
-                        <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex items-center gap-2">
                             <button
                                 onClick={() => setIsEditing(true)}
                                 className="text-xs font-semibold text-gray-600 hover:text-blue-600"

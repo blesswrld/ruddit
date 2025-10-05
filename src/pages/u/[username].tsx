@@ -100,7 +100,7 @@ export default function UserProfilePage({
                         <p className="mt-4 text-gray-700">{user.bio}</p>
                     )}
 
-                    <div className="mt-6 flex flex-wrap items-center gap-4 border-t pt-4">
+                    <div className="mt-6 flex items-center gap-4 border-t pt-4">
                         {user.linkTelegram && (
                             <a
                                 href={user.linkTelegram}
