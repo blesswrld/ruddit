@@ -23,13 +23,25 @@ export default async function handler(
 
     try {
         const { userId } = verify(token, process.env.JWT_SECRET!) as JwtPayload;
-        const { bio, avatarUrl } = req.body;
+        const { bio, avatarUrl, links } = req.body;
 
-        // Проверка на длину описания
+        // Валидация
         if (bio && typeof bio === "string" && bio.length > 210) {
             return res.status(400).json({
                 message: "Описание не может быть длиннее 210 символов.",
             });
+        }
+        if (links) {
+            for (const url of Object.values(links)) {
+                if (
+                    url &&
+                    (typeof url !== "string" ||
+                        (!url.startsWith("https://") &&
+                            !url.startsWith("http://")))
+                ) {
+                    // Разрешаем и http для гибкости
+                }
+            }
         }
 
         const updatedUser = await prisma.user.update({
@@ -37,6 +49,13 @@ export default async function handler(
             data: {
                 bio: bio,
                 avatarUrl: avatarUrl,
+                // Сохраняем ссылки
+                linkTelegram: links?.telegram || null,
+                linkInstagram: links?.instagram || null,
+                linkYouTube: links?.youTube || null,
+                linkTikTok: links?.tikTok || null,
+                linkCustomName: links?.customName || null,
+                linkCustomUrl: links?.customUrl || null,
             },
         });
 

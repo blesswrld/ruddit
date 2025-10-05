@@ -4,6 +4,13 @@ import { PrismaClient } from "@prisma/client";
 import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import { useState } from "react";
 import Link from "next/link";
+import {
+    Instagram,
+    Send,
+    Youtube,
+    Link as LinkIcon,
+    CaseUpper,
+} from "lucide-react";
 
 const prisma = new PrismaClient();
 
@@ -92,6 +99,63 @@ export default function UserProfilePage({
                     {user.bio && (
                         <p className="mt-4 text-gray-700">{user.bio}</p>
                     )}
+
+                    <div className="mt-6 flex flex-wrap items-center gap-4 border-t pt-4">
+                        {user.linkTelegram && (
+                            <a
+                                href={user.linkTelegram}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-gray-500 hover:text-blue-500"
+                                title="Telegram"
+                            >
+                                <Send />
+                            </a>
+                        )}
+                        {user.linkInstagram && (
+                            <a
+                                href={user.linkInstagram}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-gray-500 hover:text-pink-500"
+                                title="Instagram"
+                            >
+                                <Instagram />
+                            </a>
+                        )}
+                        {user.linkYouTube && (
+                            <a
+                                href={user.linkYouTube}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-gray-500 hover:text-red-600"
+                                title="YouTube"
+                            >
+                                <Youtube />
+                            </a>
+                        )}
+                        {user.linkTikTok && (
+                            <a
+                                href={user.linkTikTok}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-gray-500 hover:text-black"
+                                title="TikTok"
+                            >
+                                <CaseUpper />
+                            </a>
+                        )}
+                        {user.linkCustomUrl && user.linkCustomName && (
+                            <a
+                                href={user.linkCustomUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1 text-sm font-semibold text-blue-600 hover:underline"
+                            >
+                                <LinkIcon size={16} /> {user.linkCustomName}
+                            </a>
+                        )}
+                    </div>
                 </div>
             </div>
 

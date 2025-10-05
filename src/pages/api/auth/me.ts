@@ -38,6 +38,12 @@ export default async function handler(
                 email: true,
                 avatarUrl: true,
                 bio: true,
+                linkTelegram: true,
+                linkInstagram: true,
+                linkYouTube: true,
+                linkTikTok: true,
+                linkCustomName: true,
+                linkCustomUrl: true,
             },
         });
 

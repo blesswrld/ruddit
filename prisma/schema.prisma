@@ -15,6 +15,14 @@ model User {
   passwordHash String   // Здесь будет храниться ЗАХЕШИРОВАННЫЙ пароль
   avatarUrl          String?  // Аватар (необязательно)
   bio                String?  // Описание профиля (необязательно)
+
+  linkTelegram       String?
+  linkInstagram      String?
+  linkYouTube        String?
+  linkTikTok         String?
+  linkCustomName     String? // Имя для кастомной ссылки
+  linkCustomUrl      String? // URL для кастомной ссылки
+  
   createdAt    DateTime @default(now()) // Дата создания
   updatedAt    DateTime @updatedAt // Дата обновления
 

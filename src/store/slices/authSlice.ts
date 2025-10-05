@@ -7,6 +7,12 @@ interface User {
     email: string;
     avatarUrl?: string | null;
     bio?: string | null;
+    linkTelegram?: string | null;
+    linkInstagram?: string | null;
+    linkYouTube?: string | null;
+    linkTikTok?: string | null;
+    linkCustomName?: string | null;
+    linkCustomUrl?: string | null;
 }
 
 interface AuthState {
