@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import { useAppSelector } from "@/store/hooks"; // Импортируем хуки Redux
 import { useDispatch } from "react-redux";
 import { openLoginModal } from "@/store/slices/authSlice";
+import toast from "react-hot-toast";
 
 type CommentFormProps = {
     postId: string;
@@ -19,7 +20,7 @@ export const CommentForm = ({ postId }: CommentFormProps) => {
 
     const CONTENT_MAX_LENGTH = 5000;
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (text.trim() === "") return;
 
@@ -31,17 +32,30 @@ export const CommentForm = ({ postId }: CommentFormProps) => {
 
         setIsLoading(true);
 
-        await fetch("/api/posts/comment", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ postId, text }),
-            credentials: "include",
-        });
-
-        setIsLoading(false);
-        setText("");
-        // Перезагружаем данные страницы, чтобы увидеть новый коммент
-        router.replace(router.asPath);
+        toast
+            .promise(
+                fetch("/api/posts/comment", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ postId, text }),
+                    credentials: "include",
+                }).then((res) => {
+                    if (!res.ok)
+                        throw new Error("Не удалось отправить комментарий.");
+                }),
+                {
+                    loading: "Отправка комментария...",
+                    success: () => {
+                        setText(""); // Очищаем поле ввода
+                        router.replace(router.asPath); // Обновляем данные на странице
+                        return "Комментарий отправлен!";
+                    },
+                    error: (err) => `Ошибка: ${err.message}`,
+                }
+            )
+            .finally(() => {
+                setIsLoading(false);
+            });
     };
 
     return (

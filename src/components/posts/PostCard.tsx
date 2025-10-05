@@ -4,6 +4,7 @@ import { VoteClient } from "./VoteClient";
 import { useAppSelector } from "@/store/hooks";
 import { useRouter } from "next/router";
 import { MoreHorizontal } from "lucide-react"; // Иконка для меню
+import toast from "react-hot-toast";
 
 // Создаем и ЭКСПОРТИРУЕМ тип, описывающий пост
 export type PostForCard = {
@@ -66,51 +67,69 @@ export const PostCard = ({ post }: PostCardProps) => {
     }, [menuRef]);
 
     // Обработчик для сохранения изменений
-    const handleUpdate = async () => {
+    const handleUpdate = () => {
+        // Убираем async
         setIsLoading(true);
-        try {
-            await fetch("/api/posts/update", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                // Отправляем и title, и content
-                body: JSON.stringify({
-                    postId: post.id,
-                    title: editedTitle,
-                    content: editedContent,
+        toast
+            .promise(
+                fetch("/api/posts/update", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        postId: post.id,
+                        title: editedTitle,
+                        content: editedContent,
+                    }),
+                    credentials: "include",
+                }).then((res) => {
+                    if (!res.ok) throw new Error("Не удалось обновить пост");
                 }),
-                credentials: "include",
+                {
+                    loading: "Сохранение...",
+                    success: () => {
+                        setIsEditing(false);
+                        router.replace(router.asPath);
+                        return "Пост успешно обновлен!";
+                    },
+                    error: "Ошибка при сохранении.",
+                }
+            )
+            .finally(() => {
+                setIsLoading(false);
             });
-            setIsEditing(false);
-            router.replace(router.asPath); // Перезагружаем данные страницы для отображения изменений
-        } catch (error) {
-            console.error("Failed to update post", error);
-        } finally {
-            setIsLoading(false);
-        }
     };
 
     // Обработчик для удаления поста
-    const handleDelete = async () => {
+    const handleDelete = () => {
+        // Убираем async
         if (!confirm("Вы уверены, что хотите удалить этот пост?")) return;
         setIsLoading(true);
-        try {
-            await fetch("/api/posts/delete", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ postId: post.id }),
-                credentials: "include",
+        toast
+            .promise(
+                fetch("/api/posts/delete", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ postId: post.id }),
+                    credentials: "include",
+                }).then((res) => {
+                    if (!res.ok) throw new Error("Не удалось удалить пост");
+                }),
+                {
+                    loading: "Удаление...",
+                    success: () => {
+                        if (router.pathname.includes("/post/")) {
+                            router.push(`/s/${post.community.slug}`);
+                        } else {
+                            router.replace(router.asPath);
+                        }
+                        return "Пост удален.";
+                    },
+                    error: "Ошибка при удалении.",
+                }
+            )
+            .finally(() => {
+                setIsLoading(false);
             });
-            // Если мы на странице поста, редиректим, иначе просто обновляем ленту
-            if (router.pathname.includes("/post/")) {
-                router.push(`/s/${post.community.slug}`);
-            } else {
-                router.replace(router.asPath);
-            }
-        } catch (error) {
-            console.error("Failed to delete post", error);
-        } finally {
-            setIsLoading(false);
-        }
     };
 
     const postDate = new Date(post.createdAt).toLocaleDateString("ru-RU", {

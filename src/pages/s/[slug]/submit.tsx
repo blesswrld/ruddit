@@ -3,6 +3,7 @@ import type { GetServerSideProps } from "next";
 import { useRouter } from "next/router";
 import { useState } from "react";
 import { PrismaClient } from "@prisma/client";
+import toast from "react-hot-toast";
 
 const prisma = new PrismaClient();
 
@@ -38,36 +39,55 @@ export default function CommunitySubmitPage({ community }: SubmitPageProps) {
     const TITLE_MAX_LENGTH = 70;
     const CONTENT_MAX_LENGTH = 5000;
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = (e: React.FormEvent) => {
+        // Убираем async, toast.promise сам асинхронный
         e.preventDefault();
         setIsLoading(true);
         setError(null);
 
-        try {
-            const response = await fetch("/api/posts/create", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    title,
-                    content,
-                    communityId: community.id,
+        toast
+            .promise(
+                // Сам Promise, который выполняет запрос
+                fetch("/api/posts/create", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        title,
+                        content,
+                        communityId: community.id,
+                    }),
+                    credentials: "include",
+                }).then(async (response) => {
+                    // Внутри then мы проверяем ответ
+                    if (!response.ok) {
+                        const data = await response.json();
+                        // Если ошибка, мы "выбрасываем" ее, чтобы toast поймал в `error`
+                        throw new Error(
+                            data.message || "Не удалось создать пост"
+                        );
+                    }
+                    // Если все ок, возвращаем данные для `success`
+                    return response.json();
                 }),
-                credentials: "include", // Не забываем cookie
+                // Объект с сообщениями для каждого состояния
+                {
+                    loading: "Публикация поста...",
+                    success: () => {
+                        // Действие при успехе
+                        router.push(`/s/${community.slug}`);
+                        return "Пост успешно опубликован!"; // Сообщение для тоста
+                    },
+                    error: (err) => {
+                        // Действие при ошибке
+                        setError(err.message); // Показываем ошибку под формой
+                        return `Ошибка: ${err.message}`; // Сообщение для тоста
+                    },
+                }
+            )
+            .finally(() => {
+                // Выполнится в любом случае
+                setIsLoading(false);
             });
-
-            const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.message || "Не удалось создать пост");
-            }
-
-            // Перенаправляем на страницу сообщества после успеха
-            router.push(`/s/${community.slug}`);
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (err: any) {
-            setError(err.message);
-        } finally {
-            setIsLoading(false);
-        }
     };
 
     return (

@@ -88,42 +88,70 @@ export const Comment = ({ comment, postInfo }: CommentProps) => {
 
     const CONTENT_MAX_LENGTH = 5000;
 
-    const handleReplySubmit = async (e: React.FormEvent) => {
+    const handleReplySubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (replyText.trim() === "") return;
         setIsLoading(true);
 
-        await fetch("/api/posts/comment", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                postId: postInfo.postId,
-                text: replyText,
-                replyToId: comment.id,
-            }),
-            credentials: "include",
-        });
-
-        setIsLoading(false);
-        setIsReplying(false);
-        setReplyText("");
-        router.replace(router.asPath);
+        toast
+            .promise(
+                fetch("/api/posts/comment", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        postId: postInfo.postId,
+                        text: replyText,
+                        replyToId: comment.id,
+                    }),
+                    credentials: "include",
+                }).then((res) => {
+                    if (!res.ok) throw new Error("Не удалось отправить ответ.");
+                }),
+                {
+                    loading: "Отправка ответа...",
+                    success: () => {
+                        setIsReplying(false);
+                        setReplyText("");
+                        router.replace(router.asPath);
+                        return "Ответ отправлен!";
+                    },
+                    error: (err) => `Ошибка: ${err.message}`,
+                }
+            )
+            .finally(() => {
+                setIsLoading(false);
+            });
     };
 
-    const handleUpdate = async () => {
+    const handleUpdate = () => {
         setIsLoading(true);
-        await fetch("/api/posts/comments/update", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ commentId: comment.id, text: editedText }),
-            credentials: "include",
-        });
-
-        toast.success("Комментарий успешно обновлен!");
-
-        setIsLoading(false);
-        setIsEditing(false);
-        router.replace(router.asPath);
+        toast
+            .promise(
+                fetch("/api/posts/comments/update", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        commentId: comment.id,
+                        text: editedText,
+                    }),
+                    credentials: "include",
+                }).then((res) => {
+                    if (!res.ok)
+                        throw new Error("Не удалось обновить комментарий");
+                }),
+                {
+                    loading: "Сохранение...",
+                    success: () => {
+                        setIsEditing(false);
+                        router.replace(router.asPath);
+                        return "Комментарий успешно обновлен!";
+                    },
+                    error: (err) => `Ошибка: ${err.message}`,
+                }
+            )
+            .finally(() => {
+                setIsLoading(false);
+            });
     };
 
     const handleDelete = async () => {
