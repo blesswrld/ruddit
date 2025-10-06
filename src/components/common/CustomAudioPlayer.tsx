@@ -1,4 +1,5 @@
 "use client";
+
 import { Play, Pause, Volume2, VolumeX } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 
@@ -9,13 +10,18 @@ const formatTime = (time: number) => {
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 };
 
-export const CustomAudioPlayer = ({ src }: { src: string }) => {
+export const CustomAudioPlayer = ({
+    src,
+    trackName,
+}: {
+    src: string;
+    trackName: string;
+}) => {
     const audioRef = useRef<HTMLAudioElement>(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [duration, setDuration] = useState(0);
     const [currentTime, setCurrentTime] = useState(0);
     const [isMuted, setIsMuted] = useState(false);
-    const progressBarRef = useRef<HTMLInputElement>(null); // Ссылка на прогресс-бар
 
     // Оборачиваем функции в useCallback
     const togglePlayPause = useCallback(() => {
@@ -74,18 +80,8 @@ export const CustomAudioPlayer = ({ src }: { src: string }) => {
         const audio = audioRef.current;
         if (!audio) return;
 
-        const timeUpdateHandler = () => {
-            setCurrentTime(audio.currentTime);
-            if (progressBarRef.current) {
-                progressBarRef.current.value = String(audio.currentTime);
-            }
-        };
-        const loadedMetadataHandler = () => {
-            setDuration(audio.duration);
-            if (progressBarRef.current) {
-                progressBarRef.current.max = String(audio.duration);
-            }
-        };
+        const timeUpdateHandler = () => setCurrentTime(audio.currentTime);
+        const loadedMetadataHandler = () => setDuration(audio.duration);
         const endedHandler = () => setIsPlaying(false);
 
         audio.addEventListener("timeupdate", timeUpdateHandler);
@@ -107,7 +103,7 @@ export const CustomAudioPlayer = ({ src }: { src: string }) => {
     };
 
     return (
-        <div className="flex w-full items-center gap-4 rounded-full bg-gray-100 p-2 shadow-inner">
+        <div className="relative flex w-full items-center gap-4 rounded-full bg-gray-100 p-2 shadow-inner">
             <audio
                 ref={audioRef}
                 src={src}
@@ -117,32 +113,44 @@ export const CustomAudioPlayer = ({ src }: { src: string }) => {
 
             <button
                 onClick={togglePlayPause}
-                className="flex-shrink-0 rounded-full p-2 hover:bg-gray-200"
+                className="flex-shrink-0 rounded-full p-2 hover:bg-gray-200 z-10"
             >
                 {isPlaying ? <Pause size={20} /> : <Play size={20} />}
             </button>
 
-            <div className="flex-grow flex items-center gap-2">
-                <span className="text-xs font-mono w-10">
+            {/* Контейнер для прогресс-бара и текста */}
+            <div className="relative flex-grow flex items-center gap-2">
+                <span className="text-xs font-mono w-10 text-right z-10">
                     {formatTime(currentTime)}
                 </span>
-                <input
-                    ref={progressBarRef}
-                    type="range"
-                    min="0"
-                    step="0.1" // Для более плавной перемотки
-                    defaultValue="0"
-                    onChange={handleSeek}
-                    className="w-full h-1 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                />
-                <span className="text-xs font-mono w-10">
+
+                {/* Отдельный контейнер для бара и текста поверх него */}
+                <div className="relative w-full flex items-center">
+                    <input
+                        type="range"
+                        min="0"
+                        max={duration || 0}
+                        step="0.1" // Для более плавной прокрутки
+                        value={currentTime}
+                        onChange={handleSeek}
+                        className="w-full h-1 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                    />
+                    {/* Текст спозиционирован абсолютно относительно этого контейнера */}
+                    <div className="absolute -mt-9 inset-0 flex items-start pointer-events-none pt-3">
+                        <p className="text-xs font-semibold text-gray-700 select-none">
+                            {trackName}
+                        </p>
+                    </div>
+                </div>
+
+                <span className="text-xs font-mono w-10 z-10">
                     {formatTime(duration)}
                 </span>
             </div>
 
             <button
                 onClick={toggleMute}
-                className="flex-shrink-0 rounded-full p-2 hover:bg-gray-200"
+                className="flex-shrink-0 rounded-full p-2 hover:bg-gray-200 z-10"
             >
                 {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
             </button>

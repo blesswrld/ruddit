@@ -162,7 +162,20 @@ export default function UserProfilePage({
                     {/* Аудиоплеер */}
                     {user.profileMusicUrl && (
                         <div className="mt-6 border-t pt-4">
-                            <CustomAudioPlayer src={user.profileMusicUrl} />
+                            {/* Передаем название трека в плеер */}
+                            <CustomAudioPlayer
+                                src={user.profileMusicUrl}
+                                trackName={
+                                    user.profileMusicUrl
+                                        .split("/")
+                                        .pop()
+                                        ?.split("-")
+                                        .slice(1)
+                                        .join(" ")
+                                        .replace(".mp3", "") ||
+                                    "Трек без названия"
+                                }
+                            />
                         </div>
                     )}
                 </div>
