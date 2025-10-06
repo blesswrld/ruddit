@@ -5,12 +5,13 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
 import { Loader2 } from "lucide-react";
+import { useRouter } from "next/router";
 
 const prisma = new PrismaClient();
 const RESULTS_PER_PAGE = 10;
 
-// 1. Определяем тип для одного элемента
-type SearchResult = {
+// 1. Определяем тип для одного элемента (сообщества)
+type CommunitySearchResult = {
     id: string;
     slug: string;
     name: string;
@@ -20,32 +21,49 @@ type SearchResult = {
     };
 };
 
-// 2. getServerSideProps теперь загружает только ПЕРВУЮ страницу результатов
+// 2. Определяем тип для пользователя
+type UserSearchResult = {
+    username: string;
+    avatarUrl: string | null;
+    createdAt: string;
+};
+
+// getServerSideProps теперь загружает только ПЕРВУЮ страницу результатов
 export const getServerSideProps: GetServerSideProps = async (context) => {
-    const { q } = context.query;
+    const { q, type = "communities" } = context.query;
 
     if (typeof q !== "string" || q.trim() === "") {
-        return { props: { results: [], query: "" } };
+        return {
+            props: { initialResults: [], query: "", type: "communities" },
+        };
     }
 
-    const results = await prisma.community.findMany({
-        where: {
-            OR: [
-                { name: { contains: q, mode: "insensitive" } },
-                { description: { contains: q, mode: "insensitive" } },
-            ],
-        },
-        include: {
-            _count: { select: { subscribers: true } },
-        },
-        take: RESULTS_PER_PAGE,
-        skip: 0,
-    });
+    let results;
+    if (type === "users") {
+        results = await prisma.user.findMany({
+            where: { username: { contains: q, mode: "insensitive" } },
+            select: { username: true, avatarUrl: true, createdAt: true },
+            take: RESULTS_PER_PAGE,
+        });
+    } else {
+        results = await prisma.community.findMany({
+            where: {
+                OR: [
+                    { name: { contains: q, mode: "insensitive" } },
+                    { description: { contains: q, mode: "insensitive" } },
+                ],
+            },
+            include: { _count: { select: { subscribers: true } } },
+            take: RESULTS_PER_PAGE,
+            orderBy: { subscribers: { _count: "desc" } },
+        });
+    }
 
     return {
         props: {
             initialResults: JSON.parse(JSON.stringify(results)),
             query: q,
+            type, // Передаем `type` на клиент
         },
     };
 };
@@ -59,24 +77,28 @@ const fetchSearchResults = async ({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     queryKey: any[];
 }) => {
-    const [, query] = queryKey;
+    const [, query, type] = queryKey;
+    // Передаем `type` в API запрос
     const { data } = await axios.get(
-        `/api/search?q=${query}&page=${pageParam}`
+        `/api/search-paginated?q=${query}&type=${type}&page=${pageParam}`
     );
-    return data as SearchResult[];
+    return data;
 };
 
 export default function SearchPage({
     initialResults,
     query,
+    type, // Принимаем `type` из пропсов
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
+    const router = useRouter(); // Инициализируем роутер
+
     const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
         useInfiniteQuery({
-            queryKey: ["search-results", query],
+            queryKey: ["search-results", query, type],
             queryFn: fetchSearchResults,
             initialPageParam: 1,
             getNextPageParam: (lastPage, allPages) => {
-                if (lastPage.length < RESULTS_PER_PAGE) {
+                if (!lastPage || lastPage.length < RESULTS_PER_PAGE) {
                     return undefined;
                 }
                 return allPages.length + 1;
@@ -94,6 +116,11 @@ export default function SearchPage({
 
     const results = data?.pages.flatMap((page) => page) ?? initialResults;
 
+    // Функция для смены вкладок
+    const handleTabChange = (newType: "communities" | "users") => {
+        router.push(`/search?q=${query}&type=${newType}`);
+    };
+
     return (
         <div className="container mx-auto max-w-4xl py-6">
             <h1 className="text-2xl font-bold">
@@ -101,22 +128,49 @@ export default function SearchPage({
                 <span className="text-blue-600">&quot;{query}&quot;</span>
             </h1>
 
+            {/* ИСПРАВЛЕНИЕ: Добавляем рендер вкладок */}
+            <div className="mt-4 border-b">
+                <nav className="-mb-px flex space-x-8">
+                    <button
+                        onClick={() => handleTabChange("communities")}
+                        className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium ${
+                            type === "communities"
+                                ? "border-blue-500 text-blue-600"
+                                : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                        }`}
+                    >
+                        Сообщества
+                    </button>
+                    <button
+                        onClick={() => handleTabChange("users")}
+                        className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium ${
+                            type === "users"
+                                ? "border-blue-500 text-blue-600"
+                                : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                        }`}
+                    >
+                        Пользователи
+                    </button>
+                </nav>
+            </div>
+
             <div className="mt-6 flex flex-col gap-4">
                 {results.length > 0 ? (
-                    results.map((community, index) => {
-                        if (index === results.length - 1) {
-                            return (
-                                <div key={community.id} ref={setTarget}>
-                                    <CommunityCard community={community} />
-                                </div>
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    results.map((item: any, index) => {
+                        // Условный рендер карточек
+                        const card =
+                            type === "users" ? (
+                                <UserCard key={item.username} user={item} />
+                            ) : (
+                                <CommunityCard key={item.id} community={item} />
                             );
+
+                        if (index === results.length - 1) {
+                            // eslint-disable-next-line react/jsx-key
+                            return <div ref={setTarget}>{card}</div>;
                         }
-                        return (
-                            <CommunityCard
-                                key={community.id}
-                                community={community}
-                            />
-                        );
+                        return card;
                     })
                 ) : (
                     <p className="text-center text-gray-500">
@@ -139,7 +193,7 @@ export default function SearchPage({
 }
 
 // 4. Выносим карточку сообщества в отдельный компонент для чистоты
-const CommunityCard = ({ community }: { community: SearchResult }) => (
+const CommunityCard = ({ community }: { community: CommunitySearchResult }) => (
     <Link
         href={`/s/${community.slug}`}
         className="block rounded-lg border bg-white p-4 shadow-sm transition hover:border-blue-500 hover:shadow-md"
@@ -151,5 +205,29 @@ const CommunityCard = ({ community }: { community: SearchResult }) => (
         <p className="mt-2 text-xs text-gray-500">
             {community._count.subscribers} подписчиков
         </p>
+    </Link>
+);
+
+// Компонент для карточки пользователя
+const UserCard = ({ user }: { user: UserSearchResult }) => (
+    <Link
+        href={`/u/${user.username}`}
+        className="block rounded-lg border bg-white p-4 shadow-sm transition hover:border-blue-500 hover:shadow-md"
+    >
+        <div className="flex items-center gap-4">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+                src={user.avatarUrl || "/default-avatar.png"}
+                alt="avatar"
+                className="h-12 w-12 rounded-full"
+            />
+            <div>
+                <h2 className="font-bold text-lg">п/{user.username}</h2>
+                <p className="text-xs text-gray-500">
+                    на Ruddit с{" "}
+                    {new Date(user.createdAt).toLocaleDateString("ru-RU")}
+                </p>
+            </div>
+        </div>
     </Link>
 );

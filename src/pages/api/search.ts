@@ -2,7 +2,6 @@ import { PrismaClient } from "@prisma/client";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 const prisma = new PrismaClient();
-const RESULTS_PER_PAGE = 10; // Определяем, сколько результатов на одной "странице"
 
 export default async function handler(
     req: NextApiRequest,
@@ -12,36 +11,49 @@ export default async function handler(
         return res.status(405).json({ message: "Method Not Allowed" });
     }
 
-    const { q, page: queryPage } = req.query;
+    const { q } = req.query;
 
-    if (typeof q !== "string" || q.trim() === "") {
-        return res.status(200).json([]); // Возвращаем пустой массив, если запрос пустой
+    if (typeof q !== "string" || q.trim().length < 2) {
+        // Не ищем, если запрос слишком короткий, возвращаем пустые массивы
+        return res.status(200).json({ communities: [], users: [] });
     }
 
-    const page = Number(queryPage) || 1;
-
     try {
-        const communities = await prisma.community.findMany({
-            where: {
-                // Ищем по частичному совпадению в названии или описании, без учета регистра
-                OR: [
-                    { name: { contains: q, mode: "insensitive" } },
-                    { description: { contains: q, mode: "insensitive" } },
-                ],
-            },
-            include: {
-                _count: { select: { subscribers: true } },
-            },
-            take: RESULTS_PER_PAGE,
-            skip: (page - 1) * RESULTS_PER_PAGE,
-            orderBy: {
-                // Можно добавить сортировку, например, по подписчикам
-                subscribers: {
-                    _count: "desc",
+        // Ищем и сообщества, и пользователей ОДНОВРЕМЕННО с помощью Promise.all
+        const [communities, users] = await Promise.all([
+            // Запрос для сообществ
+            prisma.community.findMany({
+                where: {
+                    name: {
+                        contains: q,
+                        mode: "insensitive",
+                    },
                 },
-            },
-        });
-        return res.status(200).json(communities);
+                include: {
+                    _count: { select: { subscribers: true } },
+                },
+                take: 5, // Ограничиваем до 5 для выпадающего списка
+                orderBy: {
+                    subscribers: { _count: "desc" },
+                },
+            }),
+            // Запрос для пользователей
+            prisma.user.findMany({
+                where: {
+                    username: {
+                        contains: q,
+                        mode: "insensitive",
+                    },
+                },
+                select: {
+                    username: true,
+                    avatarUrl: true,
+                },
+                take: 5, // Ограничиваем до 5 для выпадающего списка
+            }),
+        ]);
+
+        return res.status(200).json({ communities, users });
     } catch (error) {
         console.error("Search API error:", error);
         return res.status(500).json({ message: "Internal Server Error" });
