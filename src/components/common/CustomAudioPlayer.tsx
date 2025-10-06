@@ -5,7 +5,7 @@ import {
     Pause,
     Volume2,
     VolumeX,
-    Music4 as MusicIcon,
+    Music as MusicIcon,
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 
