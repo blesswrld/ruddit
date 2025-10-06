@@ -1,6 +1,12 @@
 "use client";
 
-import { Play, Pause, Volume2, VolumeX } from "lucide-react";
+import {
+    Play,
+    Pause,
+    Volume2,
+    VolumeX,
+    Music4 as MusicIcon,
+} from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 
 const formatTime = (time: number) => {
@@ -136,8 +142,10 @@ export const CustomAudioPlayer = ({
                         className="w-full h-1 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-blue-600"
                     />
                     {/* Текст спозиционирован абсолютно относительно этого контейнера */}
-                    <div className="absolute -mt-9 inset-0 flex items-start pointer-events-none pt-3">
-                        <p className="text-xs font-semibold text-gray-700 select-none">
+                    <div className="absolute -mt-9 inset-0 flex items-start pointer-events-none pt-3.5">
+                        <MusicIcon size={16} />
+
+                        <p className="ml-1 text-xs font-semibold text-gray-700 select-none">
                             {trackName}
                         </p>
                     </div>

@@ -5,6 +5,7 @@ import { PrismaClient } from "@prisma/client";
 import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import { useState } from "react";
 import Link from "next/link";
+import { ShareButton } from "@/components/common/ShareButton";
 
 import {
     Instagram,
@@ -84,7 +85,12 @@ export default function UserProfilePage({
     return (
         <div className="container mx-auto max-w-4xl py-6">
             {/* Информация о пользователе */}
-            <div className="flex items-start gap-6 rounded-md bg-white p-6 shadow">
+            <div className="relative flex items-start gap-6 rounded-md bg-white p-6 shadow">
+                {/* Кнопка "Поделиться" */}
+                <div className="absolute top-4 right-4">
+                    <ShareButton />
+                </div>
+
                 {/* Аватар */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -97,6 +103,7 @@ export default function UserProfilePage({
                     <p className="mt-1 text-sm text-gray-500">
                         На Ruddit с {registrationDate}
                     </p>
+
                     {/* Описание */}
                     {user.bio && (
                         <p className="mt-4 text-gray-700">{user.bio}</p>
@@ -114,6 +121,7 @@ export default function UserProfilePage({
                                 <Send className="w-auto h-5" />
                             </a>
                         )}
+
                         {user.linkInstagram && (
                             <a
                                 href={user.linkInstagram}
