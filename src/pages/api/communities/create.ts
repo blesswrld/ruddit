@@ -36,12 +36,25 @@ export default async function handler(
     try {
         const { userId } = verify(token, process.env.JWT_SECRET!) as JwtPayload;
 
+        // Проверка ограничения
+        const ownedCommunitiesCount = await prisma.community.count({
+            where: {
+                creatorId: userId,
+            },
+        });
+
+        if (ownedCommunitiesCount >= 10) {
+            return res.status(403).json({
+                message: "Вы достигли лимита в 10 созданных сообществ.",
+            });
+        }
+
         // 2. Получаем и валидируем данные
         const { name, description } = req.body;
         if (!name || name.trim().length < 3) {
             return res
                 .status(400)
-                .json({ message: "Name must be at least 3 characters long" });
+                .json({ message: "Название должно быть длиннее 3 символов" });
         }
 
         // Генерируем слаг
@@ -52,26 +65,37 @@ export default async function handler(
             where: { slug }, // Ищем по слагу
         });
         if (existingCommunity) {
-            return res
-                .status(409)
-                .json({ message: "A community with this name already exists" });
+            return res.status(409).json({
+                message: "Сообщество с таким названием уже существует",
+            });
         }
 
-        // 4. Создаем сообщество
-        const community = await prisma.community.create({
-            data: {
-                name,
-                slug, // Сохраняем слаг
-                description,
-                creatorId: userId,
-            },
+        // 4. Используем транзакцию для создания сообщества и подписки
+        const newCommunity = await prisma.$transaction(async (tx) => {
+            // 4.1 Создаем сообщество
+            const community = await tx.community.create({
+                data: {
+                    name,
+                    slug,
+                    description,
+                    creatorId: userId,
+                },
+            });
+
+            // 4.2 Автоматически подписываем создателя на его сообщество
+            await tx.subscription.create({
+                data: {
+                    userId,
+                    communityId: community.id,
+                },
+            });
+
+            return community;
         });
 
-        return res.status(201).json(community);
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        return res.status(201).json(newCommunity);
     } catch (error) {
-        return res
-            .status(401)
-            .json({ message: "Invalid token or server error" });
+        console.error("Community creation error:", error);
+        return res.status(500).json({ message: "Internal Server Error" });
     }
 }

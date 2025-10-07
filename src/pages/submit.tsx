@@ -13,7 +13,7 @@ interface JwtPayload {
     userId: string;
 }
 
-// 1. Определяем тип для сообщества в списке
+// Определяем тип для сообщества в списке
 type CommunityForSubmit = {
     id: string;
     name: string;
@@ -31,23 +31,40 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     try {
         const { userId } = verify(token, process.env.JWT_SECRET!) as JwtPayload;
 
-        // Находим сообщества, на которые пользователь подписан, чтобы он мог выбрать
-        const subscriptions = await prisma.subscription.findMany({
-            where: { userId },
-            select: {
-                community: {
-                    select: { id: true, name: true, slug: true },
+        // Находим сообщества, на которые пользователь подписан, ИЛИ которые он создал
+        const [subscriptions, createdCommunities] = await Promise.all([
+            prisma.subscription.findMany({
+                where: { userId },
+                select: {
+                    community: { select: { id: true, name: true, slug: true } },
                 },
-            },
-            orderBy: { community: { name: "asc" } },
-        });
+            }),
+            prisma.community.findMany({
+                where: { creatorId: userId },
+                select: { id: true, name: true, slug: true },
+            }),
+        ]);
 
         // Извлекаем чистый список сообществ
-        const communities = subscriptions.map((sub) => sub.community);
+        const subscribedCommunities = subscriptions.map((sub) => sub.community);
+
+        // Объединяем два списка и убираем дубликаты
+        const allPostableCommunities = [
+            ...subscribedCommunities,
+            ...createdCommunities,
+        ];
+        const uniqueCommunities = Array.from(
+            new Map(
+                allPostableCommunities.map((item) => [item.id, item])
+            ).values()
+        );
+
+        // Сортируем по имени
+        uniqueCommunities.sort((a, b) => a.name.localeCompare(b.name));
 
         return {
             props: {
-                communities: JSON.parse(JSON.stringify(communities)),
+                communities: JSON.parse(JSON.stringify(uniqueCommunities)),
             },
         };
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -71,14 +88,14 @@ export default function GlobalSubmitPage({
     const TITLE_MAX_LENGTH = 70;
     const CONTENT_MAX_LENGTH = 5000;
 
-    // Если пользователь не подписан ни на одно сообщество, показываем сообщение
+    // Если пользователь не может постить ни в одно сообщество, показываем сообщение
     if (communities.length === 0) {
         return (
             <div className="container mx-auto max-w-3xl py-6 text-center">
                 <h1 className="text-2xl font-bold">Невозможно создать пост</h1>
                 <p className="mt-2 text-gray-600">
-                    Вы должны быть участником хотя бы одного сообщества, чтобы
-                    создавать посты.
+                    Вы должны быть участником или создателем хотя бы одного
+                    сообщества, чтобы создавать посты.
                 </p>
                 <Link
                     href="/communities"
@@ -123,11 +140,12 @@ export default function GlobalSubmitPage({
                 {
                     loading: "Публикация поста...",
                     success: () => {
-                        const community = communities.find(
+                        // Ищем в массиве `communities`
+                        const targetCommunity = communities.find(
                             (c: CommunityForSubmit) => c.id === communityId
                         );
-                        if (community) {
-                            router.push(`/s/${community.slug}`);
+                        if (targetCommunity) {
+                            router.push(`/s/${targetCommunity.slug}`);
                         } else {
                             router.push("/");
                         }
@@ -135,7 +153,7 @@ export default function GlobalSubmitPage({
                     },
                     error: (err) => {
                         setError(err.message);
-                        return `Ошибка: ${err.message}`;
+                        return `${err.message}`;
                     },
                 }
             )

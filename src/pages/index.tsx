@@ -6,17 +6,36 @@ const prisma = new PrismaClient();
 
 const POSTS_PER_PAGE = 5;
 
-export const getServerSideProps = (async () => {
-    // Просто загружаем первую страницу "Нового" для быстрой первоначальной отрисовки.
-    const posts = await prisma.post.findMany({
-        take: POSTS_PER_PAGE,
-        orderBy: { createdAt: "desc" },
-        include: {
-            author: { select: { username: true } },
-            community: { select: { slug: true } },
-            votes: true,
-        },
-    });
+export const getServerSideProps = (async (context) => {
+    // Определяем, какую ленту загружать по умолчанию
+    const defaultFeed = context.req.cookies.token ? "subscribed" : "hot";
+
+    let posts = [];
+
+    // Для SSR загружаем только "Популярное" или "Новое", так как "Моя лента" зависит от клиента
+    if (defaultFeed === "hot" || context.query.feed === "hot") {
+        // React Query на клиенте запросит и покажет правильную ленту.
+        posts = await prisma.post.findMany({
+            take: POSTS_PER_PAGE,
+            orderBy: { createdAt: "desc" },
+            include: {
+                author: { select: { username: true, id: true } },
+                community: { select: { slug: true } },
+                votes: true,
+            },
+        });
+    } else {
+        // Для всех остальных случаев (включая "Моя лента") - стартуем с "Нового"
+        posts = await prisma.post.findMany({
+            take: POSTS_PER_PAGE,
+            orderBy: { createdAt: "desc" },
+            include: {
+                author: { select: { username: true, id: true } },
+                community: { select: { slug: true } },
+                votes: true,
+            },
+        });
+    }
 
     return {
         props: {

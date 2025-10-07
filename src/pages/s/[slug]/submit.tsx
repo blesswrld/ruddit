@@ -54,7 +54,7 @@ export default function CommunitySubmitPage({ community }: SubmitPageProps) {
                     body: JSON.stringify({
                         title,
                         content,
-                        communityId: community.id,
+                        communityId: community.id, // Используем `community` из props
                     }),
                     credentials: "include",
                 }).then(async (response) => {
@@ -74,6 +74,7 @@ export default function CommunitySubmitPage({ community }: SubmitPageProps) {
                     loading: "Публикация поста...",
                     success: () => {
                         // Действие при успехе
+                        // Используем `community.slug` из props, он всегда здесь есть
                         router.push(`/s/${community.slug}`);
                         return "Пост успешно опубликован!"; // Сообщение для тоста
                     },

@@ -32,39 +32,39 @@ type PostFeedProps = {
 
 export const PostFeed = ({ initialPosts }: PostFeedProps) => {
     const { isAuthenticated, status: authStatus } = useAppSelector(
-        (state) => state.auth // TypeScript знает тип 'state' благодаря useAppSelector
+        (state) => state.auth
     );
-    const [activeFeed, setActiveFeed] = useState<"subscribed" | "new">(
+
+    // По умолчанию для залогиненных - 'subscribed', для гостей - 'hot'
+    const [activeFeed, setActiveFeed] = useState<"subscribed" | "new" | "hot">(
         "subscribed"
     );
 
-    // Эффект для автоматического переключения на "Новое", если пользователь разлогинился
+    // Эффект для установки правильной дефолтной вкладки после проверки аутентификации
     useEffect(() => {
-        if (authStatus === "succeeded" && !isAuthenticated) {
-            setActiveFeed("new");
+        if (authStatus === "succeeded") {
+            setActiveFeed(isAuthenticated ? "subscribed" : "hot");
         }
     }, [authStatus, isAuthenticated]);
 
-    const {
-        data,
-        fetchNextPage,
-        hasNextPage,
-        isFetchingNextPage,
-        isLoading, // isLoading от React Query для отслеживания первой загрузки
-    } = useInfiniteQuery({
-        queryKey: ["posts", activeFeed], // Ключ теперь зависит от активной вкладки
-        queryFn: fetchPosts,
-        initialPageParam: 1,
-        getNextPageParam: (lastPage, allPages) => {
-            if (lastPage.length < POSTS_PER_PAGE) return undefined;
-            return allPages.length + 1;
-        },
-        initialData:
-            activeFeed === "new"
-                ? { pages: [initialPosts], pageParams: [1] }
-                : undefined,
-        enabled: !!(isAuthenticated || activeFeed === "new"),
-    });
+    const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
+        useInfiniteQuery({
+            queryKey: ["posts", activeFeed],
+            queryFn: fetchPosts,
+            initialPageParam: 1,
+            getNextPageParam: (lastPage, allPages) => {
+                if (!lastPage || lastPage.length < POSTS_PER_PAGE)
+                    return undefined;
+                return allPages.length + 1;
+            },
+            // Используем initialData только если активна вкладка "Новое" или "Популярное" для гостей
+            initialData:
+                activeFeed === "new" ||
+                (activeFeed === "hot" && !isAuthenticated)
+                    ? { pages: [initialPosts], pageParams: [1] }
+                    : undefined,
+            enabled: authStatus === "succeeded", // Начинаем загрузку только после проверки сессии
+        });
 
     const { setTarget } = useIntersectionObserver({
         onIntersect: () => {
@@ -79,16 +79,18 @@ export const PostFeed = ({ initialPosts }: PostFeedProps) => {
     const FeedTabs = () => (
         <div className="mb-4 border-b">
             <nav className="-mb-px flex space-x-8">
-                <button
-                    onClick={() => setActiveFeed("subscribed")}
-                    className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium ${
-                        activeFeed === "subscribed"
-                            ? "border-blue-500 text-blue-600"
-                            : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                    }`}
-                >
-                    Моя лента
-                </button>
+                {isAuthenticated && (
+                    <button
+                        onClick={() => setActiveFeed("subscribed")}
+                        className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium ${
+                            activeFeed === "subscribed"
+                                ? "border-blue-500 text-blue-600"
+                                : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                        }`}
+                    >
+                        Моя лента
+                    </button>
+                )}
                 <button
                     onClick={() => setActiveFeed("new")}
                     className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium ${
@@ -98,6 +100,16 @@ export const PostFeed = ({ initialPosts }: PostFeedProps) => {
                     }`}
                 >
                     Новое
+                </button>
+                <button
+                    onClick={() => setActiveFeed("hot")}
+                    className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium ${
+                        activeFeed === "hot"
+                            ? "border-blue-500 text-blue-600"
+                            : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                    }`}
+                >
+                    Популярное
                 </button>
             </nav>
         </div>
@@ -116,11 +128,7 @@ export const PostFeed = ({ initialPosts }: PostFeedProps) => {
 
     return (
         <>
-            {isAuthenticated ? (
-                <FeedTabs />
-            ) : (
-                <h1 className="mb-4 text-2xl font-bold">Новое</h1>
-            )}
+            <FeedTabs />
 
             {/* Если идет первая загрузка данных для выбранной вкладки (например, переключились на пустую "Мою ленту") */}
             {isLoading && (
