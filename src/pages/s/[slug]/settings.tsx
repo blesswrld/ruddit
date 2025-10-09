@@ -4,6 +4,7 @@ import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import { useRouter } from "next/router";
 import { useState } from "react";
 import { verify } from "jsonwebtoken";
+import toast from "react-hot-toast";
 
 const prisma = new PrismaClient();
 
@@ -63,37 +64,83 @@ export default function CommunitySettingsPage({
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState("");
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleDelete = async () => {
+        if (
+            !confirm(
+                `Вы уверены, что хотите безвозвратно удалить сообщество "с/${community.name}"? Все посты и комментарии будут удалены.`
+            )
+        ) {
+            return;
+        }
         setIsLoading(true);
         setMessage("");
 
         try {
-            const response = await fetch("/api/communities/update", {
+            const response = await fetch("/api/communities/delete", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    communityId: community.id,
-                    description,
-                }),
+                body: JSON.stringify({ communityId: community.id }),
                 credentials: "include",
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(
-                    errorData.message || "Failed to update community"
-                );
+                throw new Error("Не удалось удалить сообщество.");
             }
 
-            setMessage("Сообщество успешно обновлено!");
-            setTimeout(() => router.push(`/s/${community.slug}`), 1500);
+            toast.success("Сообщество успешно удалено.");
+            router.push("/"); // Перенаправляем на главную после удаления
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
-            setMessage(`Произошла ошибка: ${error.message}`);
+            setMessage(`Ошибка: ${error.message}`);
+            toast.error(`Ошибка: ${error.message}`);
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsLoading(true);
+        setMessage("");
+
+        toast
+            .promise(
+                fetch("/api/communities/update", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        communityId: community.id,
+                        description,
+                    }),
+                    credentials: "include",
+                }).then(async (response) => {
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(
+                            errorData.message ||
+                                "Не удалось обновить сообщество"
+                        );
+                    }
+                }),
+                {
+                    loading: "Сохранение изменений...",
+                    success: () => {
+                        setMessage("Сообщество успешно обновлено!"); // Можно оставить для текста под формой
+                        setTimeout(
+                            () => router.push(`/s/${community.slug}`),
+                            1500
+                        );
+                        return "Сообщество успешно обновлено!";
+                    },
+                    error: (err) => {
+                        setMessage(`Произошла ошибка: ${err.message}`);
+                        return `Произошла ошибка: ${err.message}`;
+                    },
+                }
+            )
+            .finally(() => {
+                setIsLoading(false);
+            });
     };
 
     return (
@@ -129,6 +176,27 @@ export default function CommunitySettingsPage({
                     >
                         {isLoading ? "Сохранение..." : "Сохранить"}
                     </Button>
+                </div>
+
+                <div className="mt-8 border-t border-red-200 pt-6">
+                    <h2 className="text-lg font-semibold text-red-700">
+                        Опасная зона
+                    </h2>
+                    <p className="mt-1 text-sm text-gray-500">
+                        Удаление сообщества — необратимое действие. Все посты,
+                        комментарии и подписчики будут удалены навсегда.
+                    </p>
+                    <div className="mt-4">
+                        <Button
+                            onClick={handleDelete}
+                            disabled={isLoading}
+                            className="w-full h-9 bg-red-600 text-white hover:bg-red-700 disabled:bg-red-300"
+                        >
+                            {isLoading
+                                ? "Удаление..."
+                                : "Удалить это сообщество"}
+                        </Button>
+                    </div>
                 </div>
             </form>
         </div>
