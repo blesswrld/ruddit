@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { useDispatch } from "react-redux";
 import { updateUserProfile } from "@/store/slices/authSlice";
 import { Input } from "@/components/common/Input";
+import toast from "react-hot-toast";
 
 export default function ProfileSettingsPage() {
     const router = useRouter();
@@ -192,6 +193,32 @@ export default function ProfileSettingsPage() {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
             setMessage(`Ошибка при сохранении: ${error.message}`);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleDeleteAccount = async () => {
+        if (
+            !confirm(
+                "Вы уверены, что хотите НАВСЕГДА удалить свой аккаунт? Все ваши посты, комментарии и сообщества будут удалены."
+            )
+        ) {
+            return;
+        }
+        setIsLoading(true);
+
+        try {
+            await fetch("/api/users/delete", {
+                method: "POST",
+                credentials: "include",
+            });
+            toast.success("Ваш аккаунт удален.");
+            // router.reload() вызовет выход из системы, т.к. cookie удален
+            router.reload();
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        } catch (error) {
+            toast.error("Не удалось удалить аккаунт.");
         } finally {
             setIsLoading(false);
         }
@@ -401,6 +428,7 @@ export default function ProfileSettingsPage() {
                         type="button" // Важно: type="button", чтобы не отправлять форму
                         onClick={resetForm}
                         disabled={isLoading}
+                        variant="secondary"
                         className="w-auto text-black hover:opacity-80"
                     >
                         Отмена
@@ -409,12 +437,32 @@ export default function ProfileSettingsPage() {
                         type="submit"
                         // Блокируем кнопку, если превышен лимит
                         disabled={isLoading || bio.length > 210}
+                        variant="primary"
                         className="w-auto text-black hover:opacity-80"
                     >
                         {isLoading ? "Сохранение..." : "Сохранить изменения"}
                     </Button>
                 </div>
             </form>
+
+            <div className="mt-8 border-t border-red-200 pt-6">
+                <h2 className="text-lg font-semibold text-red-700">
+                    Опасная зона
+                </h2>
+                <p className="mt-1 text-sm text-gray-500">
+                    Удаление аккаунта — необратимое действие.
+                </p>
+                <div className="mt-4">
+                    <Button
+                        onClick={handleDeleteAccount}
+                        disabled={isLoading}
+                        variant="danger" // Используем наш вариант
+                        className="w-auto"
+                    >
+                        {isLoading ? "Удаление..." : "Удалить аккаунт"}
+                    </Button>
+                </div>
+            </div>
         </div>
     );
 }
