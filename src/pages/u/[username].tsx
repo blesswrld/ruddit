@@ -6,6 +6,7 @@ import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import { useState } from "react";
 import Link from "next/link";
 import { ShareButton } from "@/components/common/ShareButton";
+import { useAppSelector } from "@/store/hooks"; // 1. Импортируем хук
 
 import {
     Instagram,
@@ -26,7 +27,7 @@ export const getServerSideProps = (async (context) => {
             posts: {
                 orderBy: { createdAt: "desc" },
                 include: {
-                    author: { select: { username: true } },
+                    author: { select: { username: true, id: true } }, // Добавил id
                     community: { select: { slug: true } },
                     votes: true,
                 },
@@ -57,7 +58,6 @@ export const getServerSideProps = (async (context) => {
     }
 
     // Убираем хеш пароля перед отправкой на клиент
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash, ...userWithoutPassword } = user;
 
     return {
@@ -70,6 +70,11 @@ export const getServerSideProps = (async (context) => {
 export default function UserProfilePage({
     user,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
+    // 2. Получаем данные ТЕКУЩЕГО залогиненного пользователя
+    const { user: currentUser } = useAppSelector((state) => state.auth);
+    // 3. Сравниваем
+    const isOwnProfile = currentUser?.username === user.username;
+
     const [activeTab, setActiveTab] = useState<
         "posts" | "comments" | "communities"
     >("posts");
@@ -236,7 +241,10 @@ export default function UserProfilePage({
                             ))
                         ) : (
                             <p className="text-center text-gray-500">
-                                У пользователя еще нет постов.
+                                {/* 4. Условный текст */}
+                                {isOwnProfile
+                                    ? "У вас еще нет постов."
+                                    : "У пользователя еще нет постов."}
                             </p>
                         )}
                     </>
@@ -253,7 +261,10 @@ export default function UserProfilePage({
                             ))
                         ) : (
                             <p className="text-center text-gray-500">
-                                У пользователя еще нет комментариев.
+                                {/* Условный текст */}
+                                {isOwnProfile
+                                    ? "У вас еще нет комментариев."
+                                    : "У пользователя еще нет комментариев."}
                             </p>
                         )}
                     </>
@@ -282,7 +293,10 @@ export default function UserProfilePage({
                             ))
                         ) : (
                             <p className="text-center text-gray-500">
-                                Пользователь еще не создал ни одного сообщества.
+                                {/* Условный текст */}
+                                {isOwnProfile
+                                    ? "Вы еще не создали ни одного сообщества."
+                                    : "Пользователь еще не создал ни одного сообщества."}
                             </p>
                         )}
                     </>
