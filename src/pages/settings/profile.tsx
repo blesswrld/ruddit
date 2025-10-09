@@ -410,7 +410,7 @@ export default function ProfileSettingsPage() {
                                     className="sr-only"
                                 />
                             </label>
-                            <span className="ml-3 text-sm text-gray-500">
+                            <span className="ml-3 text-sm text-gray-500 break-all">
                                 {musicFile?.name ||
                                     (user?.profileMusicUrl
                                         ? "Текущий трек загружен"
@@ -438,7 +438,7 @@ export default function ProfileSettingsPage() {
                         // Блокируем кнопку, если превышен лимит
                         disabled={isLoading || bio.length > 210}
                         variant="primary"
-                        className="w-auto text-black hover:opacity-80"
+                        className="w-auto text-black hover:opacity-80 border-none outline-none ring-0 focus:ring-0"
                     >
                         {isLoading ? "Сохранение..." : "Сохранить изменения"}
                     </Button>
@@ -457,7 +457,7 @@ export default function ProfileSettingsPage() {
                         onClick={handleDeleteAccount}
                         disabled={isLoading}
                         variant="danger" // Используем наш вариант
-                        className="w-auto"
+                        className="w-auto border-none outline-none ring-0 focus:ring-0"
                     >
                         {isLoading ? "Удаление..." : "Удалить аккаунт"}
                     </Button>

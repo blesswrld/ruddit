@@ -60,7 +60,7 @@ export const Header = () => {
                     <Link
                         href="/submit"
                         title="Создать пост"
-                        className="rounded-md p-2 hover:bg-gray-100"
+                        className="rounded-md p-2 hover:bg-gray-100 border-none outline-none ring-0 focus:ring-0"
                     >
                         <Plus className="h-6 w-6 text-gray-700" />
                     </Link>
@@ -89,7 +89,7 @@ export const Header = () => {
                         </button>
                         {/* Выпадающее меню */}
                         {isMenuOpen && (
-                            <div className="absolute right-0 mt-2 w-48 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5">
+                            <div className="absolute right-0 mt-2 w-48 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 z-20">
                                 <div className="py-1">
                                     <Link
                                         href={`/u/${user?.username}`}
@@ -98,8 +98,13 @@ export const Header = () => {
                                         Мой профиль
                                     </Link>
                                     <Link
+                                        href="/communities?show=subscribed"
+                                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                    >
+                                        Мои сообщества
+                                    </Link>
+                                    <Link
                                         href="/s/create"
-                                        title="Профиль"
                                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                                     >
                                         Создать сообщество

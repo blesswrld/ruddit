@@ -196,13 +196,15 @@ export default function SearchPage({
 const CommunityCard = ({ community }: { community: CommunitySearchResult }) => (
     <Link
         href={`/s/${community.slug}`}
-        className="block rounded-lg border bg-white p-4 shadow-sm transition hover:border-blue-500 hover:shadow-md"
+        className="block rounded-lg border bg-white p-4 shadow-sm hover:border-blue-500 hover:shadow-md"
     >
-        <h2 className="text-xl font-bold text-gray-800">с/{community.name}</h2>
-        <p className="mt-1 text-sm text-gray-600">
+        <h2 className="text-xl font-bold text-gray-800 break-all">
+            с/{community.name}
+        </h2>
+        <p className="mt-1 text-sm text-gray-600 break-all">
             {community.description || "Нет описания"}
         </p>
-        <p className="mt-2 text-xs text-gray-500">
+        <p className="mt-2 text-xs text-gray-500 break-all">
             {community._count.subscribers} подписчиков
         </p>
     </Link>
@@ -212,7 +214,7 @@ const CommunityCard = ({ community }: { community: CommunitySearchResult }) => (
 const UserCard = ({ user }: { user: UserSearchResult }) => (
     <Link
         href={`/u/${user.username}`}
-        className="block rounded-lg border bg-white p-4 shadow-sm transition hover:border-blue-500 hover:shadow-md"
+        className="block rounded-lg border bg-white p-4 shadow-sm hover:border-blue-500 hover:shadow-md"
     >
         <div className="flex items-center gap-4">
             {/* eslint-disable-next-line @next/next/no-img-element */}

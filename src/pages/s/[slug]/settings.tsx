@@ -172,7 +172,7 @@ export default function CommunitySettingsPage({
                     <Button
                         type="submit"
                         disabled={isLoading}
-                        className="w-auto"
+                        className="w-auto border-none outline-none ring-0 focus:ring-0"
                     >
                         {isLoading ? "Сохранение..." : "Сохранить"}
                     </Button>
@@ -190,7 +190,7 @@ export default function CommunitySettingsPage({
                         <Button
                             onClick={handleDelete}
                             disabled={isLoading}
-                            className="w-full h-9 bg-red-600 text-white hover:bg-red-700 disabled:bg-red-300"
+                            className="w-full h-fit bg-red-600 text-white hover:bg-red-800 disabled:bg-red-300 border-none outline-none ring-0 focus:ring-0"
                         >
                             {isLoading
                                 ? "Удаление..."

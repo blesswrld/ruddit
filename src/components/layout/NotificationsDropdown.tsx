@@ -151,7 +151,7 @@ export const NotificationsDropdown = () => {
                                 </div>
                                 <button
                                     onClick={() => mutation.mutate(notif.id)}
-                                    className="p-1 rounded-full opacity-0 group-hover:opacity-100 hover:bg-green-100 text-gray-400 hover:text-green-600 transition-opacity"
+                                    className="p-1 rounded-full opacity-0 group-hover:opacity-100 hover:bg-green-100 text-gray-400 hover:text-green-600"
                                     title="Отметить как прочитанное"
                                 >
                                     <Check className="h-4 w-4" />

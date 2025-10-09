@@ -183,7 +183,7 @@ export const PostCard = ({ post }: PostCardProps) => {
                                         </button>
                                         <button
                                             onClick={handleDelete}
-                                            className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                                            className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 border-none outline-none ring-0 focus:ring-0"
                                         >
                                             Удалить
                                         </button>
@@ -249,7 +249,7 @@ export const PostCard = ({ post }: PostCardProps) => {
                                     editedTitle.length > TITLE_MAX_LENGTH ||
                                     editedContent.length > CONTENT_MAX_LENGTH
                                 }
-                                className="rounded bg-blue-600 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+                                className="rounded bg-blue-600 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50 border-none outline-none ring-0 focus:ring-0"
                             >
                                 {isLoading ? "Сохранение..." : "Сохранить"}
                             </button>
@@ -270,7 +270,7 @@ export const PostCard = ({ post }: PostCardProps) => {
                         <Link
                             href={`/s/${post.community.slug}/post/${post.id}`}
                         >
-                            <h2 className="mb-2 text-xl break-all font-bold hover:underline">
+                            <h2 className="mb-2 text-xl font-bold hover:underline break-all">
                                 {post.title}
                             </h2>
                         </Link>

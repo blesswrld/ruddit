@@ -118,7 +118,7 @@ export default function CommunitiesPage({
                 </h1>
                 <Link
                     href="/s/create"
-                    className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                    className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 border-none outline-none ring-0 focus:ring-0"
                 >
                     Создать свое
                 </Link>
@@ -132,7 +132,7 @@ export default function CommunitiesPage({
                             <Link
                                 key={community.id}
                                 href={`/s/${community.slug}`}
-                                className="block rounded-lg border bg-white p-4 shadow-sm transition hover:border-blue-500 hover:shadow-md"
+                                className="block rounded-lg border bg-white p-4 shadow-sm hover:border-blue-500 hover:shadow-md"
                             >
                                 <div className="flex items-center gap-4">
                                     <span className="text-lg font-bold text-gray-500">
@@ -142,7 +142,7 @@ export default function CommunitiesPage({
                                         <h2 className="text-xl font-bold text-gray-800">
                                             с/{community.name}
                                         </h2>
-                                        <p className="mt-1 text-sm text-gray-600">
+                                        <p className="mt-1 text-sm text-gray-600 break-all">
                                             {community.description ||
                                                 "Нет описания"}
                                         </p>

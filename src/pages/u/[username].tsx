@@ -174,20 +174,25 @@ export default function UserProfilePage({
 
                     {/* Аудиоплеер */}
                     {user.profileMusicUrl && (
-                        <div className="mt-6 border-t pt-4">
+                        <div className="mt-6 border-t pt-4 break-all">
                             {/* Передаем название трека в плеер */}
                             <CustomAudioPlayer
                                 src={user.profileMusicUrl}
-                                trackName={
-                                    user.profileMusicUrl
-                                        .split("/")
-                                        .pop()
-                                        ?.split("-")
-                                        .slice(1)
-                                        .join(" ")
-                                        .replace(".mp3", "") ||
-                                    "Трек без названия"
-                                }
+                                trackName={(() => {
+                                    const fullName =
+                                        user.profileMusicUrl
+                                            .split("/")
+                                            .pop()
+                                            ?.split("-")
+                                            .slice(1)
+                                            .join(" ")
+                                            .replace(".mp3", "") ||
+                                        "Трек без названия";
+
+                                    return fullName.length > 12
+                                        ? `${fullName.substring(0, 12)}...`
+                                        : fullName;
+                                })()}
                             />
                         </div>
                     )}
@@ -277,12 +282,12 @@ export default function UserProfilePage({
                                 <Link
                                     key={community.id}
                                     href={`/s/${community.slug}`}
-                                    className="block rounded-lg border bg-white p-4 shadow-sm transition hover:border-blue-500 hover:shadow-md"
+                                    className="block rounded-lg border bg-white p-4 shadow-sm hover:border-blue-500 hover:shadow-md break-all"
                                 >
-                                    <h3 className="font-bold text-lg">
+                                    <h3 className="font-bold text-lg break-all">
                                         с/{community.name}
                                     </h3>
-                                    <p className="text-sm text-gray-600 mt-1">
+                                    <p className="text-sm text-gray-600 mt-1 break-all">
                                         {community.description}
                                     </p>
                                     <p className="text-xs text-gray-500 mt-2">

@@ -69,7 +69,11 @@ export default function CreateCommunityPage() {
 
                 {error && <p className="text-sm text-red-500">{error}</p>}
 
-                <Button type="submit" disabled={isLoading}>
+                <Button
+                    type="submit"
+                    disabled={isLoading}
+                    className="border-none outline-none ring-0 focus:ring-0"
+                >
                     {isLoading ? "Создание..." : "Создать сообщество"}
                 </Button>
             </form>

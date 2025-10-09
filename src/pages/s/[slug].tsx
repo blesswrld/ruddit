@@ -113,7 +113,7 @@ export default function CommunityPage({
                         <div className="mb-4 rounded-md bg-white p-4 shadow">
                             <Link
                                 href={`/s/${community.slug}/submit`}
-                                className="block w-full rounded-md border border-gray-300 bg-gray-50 px-4 py-3 text-left text-gray-600 hover:bg-gray-100"
+                                className="block w-full rounded-md border border-gray-300 bg-gray-50 px-4 py-3 text-left text-gray-600 hover:bg-gray-100 "
                             >
                                 Создать пост
                             </Link>
@@ -137,7 +137,7 @@ export default function CommunityPage({
                         <h2 className="mb-2 border-b pb-2 font-bold">
                             О сообществе
                         </h2>
-                        <p className="text-sm text-gray-700">
+                        <p className="text-sm text-gray-700 break-all">
                             {community.description || "Нет описания."}
                         </p>
                         <div className="mt-4 text-sm text-gray-500">
@@ -164,7 +164,10 @@ export default function CommunityPage({
                                     <Link
                                         href={`/s/${community.slug}/settings`}
                                     >
-                                        <Button className="w-full text-gray-600 hover:text-gray-900">
+                                        <Button
+                                            className="w-full border-none outline-none ring-0 focus:ring-0"
+                                            variant="primary"
+                                        >
                                             Настройки сообщества
                                         </Button>
                                     </Link>
