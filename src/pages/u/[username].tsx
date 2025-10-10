@@ -191,8 +191,8 @@ export default function UserProfilePage({
                                             .replace(".mp3", "") ||
                                         "Трек без названия";
 
-                                    return fullName.length > 12
-                                        ? `${fullName.substring(0, 12)}...`
+                                    return fullName.length > 16
+                                        ? `${fullName.substring(0, 16)}...`
                                         : fullName;
                                 })()}
                             />

@@ -375,6 +375,12 @@ export default function GlobalSubmitPage({
                             </label>
                         )}
                     </div>
+
+                    {/* Подсказка */}
+                    <p className="mt-2 text-xs text-gray-500">
+                        Совет: для лучшего отображения используйте
+                        горизонтальные изображения (16:9) или квадратные (1:1).
+                    </p>
                 </div>
 
                 {error && <p className="text-red-500 text-sm">{error}</p>}

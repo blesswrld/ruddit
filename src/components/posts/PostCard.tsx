@@ -473,6 +473,13 @@ export const PostCard = ({ post }: PostCardProps) => {
                                     </label>
                                 )}
                             </div>
+
+                            {/* Подсказка */}
+                            <p className="mt-2 text-xs text-gray-500">
+                                Совет: для лучшего отображения используйте
+                                горизонтальные изображения (16:9) или квадратные
+                                (1:1).
+                            </p>
                         </div>
 
                         <div className="mt-2 flex gap-2">

@@ -241,6 +241,12 @@ export default function CommunitySubmitPage({ community }: SubmitPageProps) {
                             </label>
                         )}
                     </div>
+
+                    {/* Подсказка */}
+                    <p className="mt-2 text-xs text-gray-500">
+                        Совет: для лучшего отображения используйте
+                        горизонтальные изображения (16:9) или квадратные (1:1).
+                    </p>
                 </div>
 
                 {error && <p className="text-sm text-red-500">{error}</p>}
