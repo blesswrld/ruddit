@@ -22,6 +22,7 @@ export const getServerSideProps = (async (context) => {
                 author: { select: { username: true, id: true } },
                 community: { select: { slug: true } },
                 votes: true,
+                images: true,
             },
         });
     } else {
@@ -33,6 +34,7 @@ export const getServerSideProps = (async (context) => {
                 author: { select: { username: true, id: true } },
                 community: { select: { slug: true } },
                 votes: true,
+                images: true,
             },
         });
     }

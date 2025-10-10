@@ -78,6 +78,15 @@ model Post {
   comments Comment[]
 
   notifications Notification[]
+
+  images Image[]
+}
+
+model Image {
+  id     String @id @default(cuid())
+  url    String // URL изображения в Yandex Storage
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
 }
 
 enum VoteType {

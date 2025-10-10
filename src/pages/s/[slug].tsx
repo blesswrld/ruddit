@@ -49,6 +49,7 @@ export const getServerSideProps = (async (context) => {
                 include: {
                     author: { select: { username: true } },
                     votes: true,
+                    images: true,
                     community: { select: { slug: true } },
                 },
             },

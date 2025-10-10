@@ -62,6 +62,7 @@ export default async function handler(
                     author: { select: { username: true, id: true } },
                     community: { select: { slug: true } },
                     votes: true,
+                    images: true,
                 },
             });
         } else if (feedType === "hot") {
@@ -97,6 +98,7 @@ export default async function handler(
                     author: { select: { username: true, id: true } },
                     community: { select: { slug: true } },
                     votes: true,
+                    images: true,
                 },
             });
 
@@ -117,6 +119,7 @@ export default async function handler(
                     author: { select: { username: true, id: true } },
                     community: { select: { slug: true } },
                     votes: true,
+                    images: true,
                 },
             });
         }

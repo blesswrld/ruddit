@@ -23,8 +23,10 @@ export default async function handler(
 
     try {
         const { userId } = verify(token, process.env.JWT_SECRET!) as JwtPayload;
-        const { title, content, communityId } = req.body;
+        // 1. Получаем imageUrls из body
+        const { title, content, communityId, imageUrls } = req.body;
 
+        // Валидация
         if (!title || title.trim().length === 0) {
             return res.status(400).json({ message: "Заголовок обязателен" });
         }
@@ -44,37 +46,50 @@ export default async function handler(
                 .status(400)
                 .json({ message: "Community ID is required" });
         }
+        // Валидация для изображений
+        if (imageUrls && (!Array.isArray(imageUrls) || imageUrls.length > 5)) {
+            return res
+                .status(400)
+                .json({ message: "Можно загрузить не более 5 изображений." });
+        }
 
-        const communityExists = await prisma.community.findUnique({
+        // Проверка на подписку или авторство
+        const community = await prisma.community.findUnique({
             where: { id: communityId },
         });
-        if (!communityExists) {
+        if (!community) {
             return res.status(404).json({ message: "Community not found" });
         }
 
         // Является ли пользователь подписчиком?
         const subscription = await prisma.subscription.findUnique({
-            where: {
-                userId_communityId: {
-                    userId,
-                    communityId,
-                },
-            },
+            where: { userId_communityId: { userId, communityId } },
         });
-
-        if (!subscription) {
+        if (!subscription && community.creatorId !== userId) {
             return res.status(403).json({
                 message:
-                    "Вы должны быть участником сообщества, чтобы создавать посты.",
+                    "Вы должны быть участником или создателем сообщества, чтобы создавать посты.",
             });
         }
 
+        // 2. Используем транзакцию, чтобы создать пост и картинки атомарно
         const post = await prisma.post.create({
             data: {
                 title,
                 content,
                 authorId: userId,
                 communityId: communityId,
+                // 3. Создаем связанные изображения
+                images: {
+                    createMany: {
+                        data: imageUrls
+                            ? imageUrls.map((url: string) => ({ url }))
+                            : [],
+                    },
+                },
+            },
+            include: {
+                images: true,
             },
         });
 

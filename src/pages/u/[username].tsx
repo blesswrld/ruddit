@@ -30,6 +30,7 @@ export const getServerSideProps = (async (context) => {
                     author: { select: { username: true, id: true } }, // Добавил id
                     community: { select: { slug: true } },
                     votes: true,
+                    images: true,
                 },
             },
             comments: {
@@ -58,6 +59,7 @@ export const getServerSideProps = (async (context) => {
     }
 
     // Убираем хеш пароля перед отправкой на клиент
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { passwordHash, ...userWithoutPassword } = user;
 
     return {

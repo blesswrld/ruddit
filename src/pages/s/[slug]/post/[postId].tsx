@@ -23,6 +23,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
                 },
             },
             votes: true,
+            images: true,
         },
     });
 
