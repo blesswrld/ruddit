@@ -24,6 +24,7 @@ model User {
   linkCustomUrl      String? // URL для кастомной ссылки
   
   profileMusicUrl    String?
+  profileBannerColor   String?
 
   createdAt    DateTime @default(now()) // Дата создания
   updatedAt    DateTime @updatedAt // Дата обновления

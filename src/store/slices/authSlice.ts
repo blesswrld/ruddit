@@ -14,6 +14,7 @@ interface User {
     linkCustomName?: string | null;
     linkCustomUrl?: string | null;
     profileMusicUrl?: string | null;
+    profileBannerColor?: string | null;
 }
 
 interface AuthState {
@@ -64,6 +65,7 @@ const authSlice = createSlice({
                 bio?: string | null;
                 avatarUrl?: string | null;
                 profileMusicUrl?: string | null;
+                profileBannerColor?: string | null;
             }>
         ) => {
             if (state.user) {
@@ -73,6 +75,9 @@ const authSlice = createSlice({
                 state.user.profileMusicUrl =
                     action.payload.profileMusicUrl ??
                     state.user.profileMusicUrl;
+                state.user.profileBannerColor =
+                    action.payload.profileBannerColor ??
+                    state.user.profileBannerColor;
             }
         },
 

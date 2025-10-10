@@ -23,6 +23,8 @@ export default function ProfileSettingsPage() {
     const [musicFile, setMusicFile] = useState<File | null>(null);
     const musicFileInputRef = useRef<HTMLInputElement>(null);
 
+    const [bannerColor, setBannerColor] = useState("");
+
     // Состояние для всех ссылок
     const [links, setLinks] = useState({
         telegram: "",
@@ -58,6 +60,7 @@ export default function ProfileSettingsPage() {
     useEffect(() => {
         if (user) {
             resetForm();
+            setBannerColor(user.profileBannerColor || "");
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
@@ -151,7 +154,6 @@ export default function ProfileSettingsPage() {
 
                 const { signedUrl, publicUrl } = await signResponse.json();
 
-                // ВОТ ЭТОТ БЛОК ТЫ ПРОПУСТИЛ
                 const uploadResponse = await fetch(signedUrl, {
                     method: "PUT",
                     body: musicFile,
@@ -179,6 +181,7 @@ export default function ProfileSettingsPage() {
                     bio,
                     links,
                     profileMusicUrl: uploadedMusicUrl, // Отправляем ссылку
+                    profileBannerColor: bannerColor,
                 }),
                 credentials: "include",
             });
