@@ -138,8 +138,10 @@ model Subscription {
 }
 
 enum NotificationType {
-  NEW_REPLY // Новый ответ комментарий
-  // В будущем можно добавить NEW_POST_COMMENT, NEW_VOTE и т.д.
+  NEW_REPLY          // Новый ответ на комментарий
+  NEW_COMMENT_ON_POST // Новый комментарий к посту
+  NEW_POST_IN_SUB    // Новый пост в сообществе, на которое пользоватеель подписан
+  POST_UPVOTE        // Кто-то лайкнул пост
 }
 
 model Notification {

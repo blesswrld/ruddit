@@ -43,6 +43,16 @@ export default async function handler(
             },
         });
 
+        // Загружаем пост, чтобы узнать ID его автора
+        const post = await prisma.post.findUnique({
+            where: { id: postId },
+            select: { authorId: true },
+        });
+
+        if (!post) {
+            return res.status(404).json({ message: "Post not found" });
+        }
+
         if (existingVote) {
             // Если пользователь кликает на ту же кнопку, отменяем голос
             if (existingVote.type === voteType) {
@@ -66,6 +76,17 @@ export default async function handler(
                     },
                     data: { type: voteType },
                 });
+                // Уведомляем об апвоуте при смене с даунвоута
+                if (voteType === "UP" && post.authorId !== userId) {
+                    await prisma.notification.create({
+                        data: {
+                            type: "POST_UPVOTE",
+                            recipientId: post.authorId,
+                            senderId: userId,
+                            postId: postId,
+                        },
+                    });
+                }
                 return res.status(200).json({ message: "Vote updated" });
             }
         } else {
@@ -74,9 +95,21 @@ export default async function handler(
                 data: {
                     type: voteType,
                     userId,
+
                     postId,
                 },
             });
+            // Уведомляем об апвоуте при первом голосовании
+            if (voteType === "UP" && post.authorId !== userId) {
+                await prisma.notification.create({
+                    data: {
+                        type: "POST_UPVOTE",
+                        recipientId: post.authorId,
+                        senderId: userId,
+                        postId: postId,
+                    },
+                });
+            }
             return res.status(201).json({ message: "Vote created" });
         }
     } catch (error) {

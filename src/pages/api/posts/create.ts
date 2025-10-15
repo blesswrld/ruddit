@@ -72,25 +72,51 @@ export default async function handler(
             });
         }
 
-        // 2. Используем транзакцию, чтобы создать пост и картинки атомарно
-        const post = await prisma.post.create({
-            data: {
-                title,
-                content,
-                authorId: userId,
-                communityId: communityId,
-                // 3. Создаем связанные изображения
-                images: {
-                    createMany: {
-                        data: imageUrls
-                            ? imageUrls.map((url: string) => ({ url }))
-                            : [],
+        // 2. Используем транзакцию, чтобы создать пост, картинки и уведомления атомарно
+        const post = await prisma.$transaction(async (tx) => {
+            const newPost = await tx.post.create({
+                data: {
+                    title,
+                    content,
+                    authorId: userId,
+                    communityId: communityId,
+                    // 3. Создаем связанные изображения
+                    images: {
+                        createMany: {
+                            data: imageUrls
+                                ? imageUrls.map((url: string) => ({ url }))
+                                : [],
+                        },
                     },
                 },
-            },
-            include: {
-                images: true,
-            },
+                include: {
+                    images: true,
+                },
+            });
+
+            // Находим всех подписчиков сообщества, кроме автора поста
+            const subscribers = await tx.subscription.findMany({
+                where: {
+                    communityId: communityId,
+                    userId: { not: userId }, // Не уведомляем самого себя
+                },
+                select: { userId: true },
+            });
+
+            if (subscribers.length > 0) {
+                const notificationsData = subscribers.map((sub) => ({
+                    type: "NEW_POST_IN_SUB" as const,
+                    recipientId: sub.userId,
+                    senderId: userId,
+                    postId: newPost.id,
+                }));
+                // Создаем все уведомления одним запросом
+                await tx.notification.createMany({
+                    data: notificationsData,
+                });
+            }
+
+            return newPost;
         });
 
         return res.status(201).json(post);

@@ -25,14 +25,25 @@ export default async function handler(
         const { userId } = verify(token, process.env.JWT_SECRET!) as JwtPayload;
         const { postId, text, replyToId } = req.body;
 
-        if (!text || text.trim() === "") {
-            return res.status(400).json({ message: "Text are required" });
+        if (!postId || !text || text.trim() === "") {
+            return res
+                .status(400)
+                .json({ message: "Post ID and text are required" });
         }
 
         if (text.length > 5000) {
             return res.status(400).json({
                 message: "Комментарий не может быть длиннее 5000 символов.",
             });
+        }
+
+        // Загружаем пост, чтобы узнать ID его автора
+        const post = await prisma.post.findUnique({
+            where: { id: postId },
+            select: { authorId: true },
+        });
+        if (!post) {
+            return res.status(404).json({ message: "Post not found" });
         }
 
         // Если это ответ на другой комментарий (replyToId существует)
@@ -43,15 +54,29 @@ export default async function handler(
                 select: { authorId: true },
             });
 
-            // Создаем уведомление, ТОЛЬКО если пользователь не отвечает сам себе
+            // Создаем уведомление для автора родительского комментария,
+            // ТОЛЬКО если пользователь не отвечает сам себе
             if (parentComment && parentComment.authorId !== userId) {
                 await prisma.notification.create({
                     data: {
                         type: "NEW_REPLY",
-                        recipientId: parentComment.authorId, // Получатель - автор родительского коммента
-                        senderId: userId, // Отправитель - текущий юзер
+                        recipientId: parentComment.authorId,
+                        senderId: userId,
                         postId: postId,
-                        commentId: replyToId, // Ссылка на родительский коммент
+                        commentId: replyToId,
+                    },
+                });
+            }
+        } else {
+            // Если это комментарий верхнего уровня, уведомляем автора поста
+            // (если это не он сам)
+            if (post.authorId !== userId) {
+                await prisma.notification.create({
+                    data: {
+                        type: "NEW_COMMENT_ON_POST",
+                        recipientId: post.authorId,
+                        senderId: userId,
+                        postId: postId,
                     },
                 });
             }

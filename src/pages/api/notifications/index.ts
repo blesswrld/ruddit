@@ -38,7 +38,12 @@ export default async function handler(
                     select: {
                         id: true,
                         title: true,
-                        community: { select: { slug: true } },
+                        community: {
+                            select: {
+                                slug: true,
+                                name: true,
+                            },
+                        },
                     },
                 }, // Добавил community.slug для ссылки
                 comment: { select: { id: true } },

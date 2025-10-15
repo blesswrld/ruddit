@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { Bell, Check } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/router"; // 1. Импортируем useRouter
+import { useRouter } from "next/router";
 import { useState, useRef, useEffect } from "react";
 
 // Функция для получения уведомлений
@@ -22,17 +22,93 @@ const markAsRead = async (notificationId: string) => {
     );
 };
 
+// Компонент для рендера текста и ссылки уведомления
+const NotificationItem = ({
+    notif,
+    onNavigate,
+    onMarkRead,
+}: {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    notif: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onNavigate: (notif: any) => void;
+    onMarkRead: (notificationId: string) => void;
+}) => {
+    let message: string = "";
+    let linkText: string = notif.post?.title || "";
+
+    switch (notif.type) {
+        case "NEW_REPLY":
+            message = "ответил на ваш комментарий в посте";
+            break;
+        case "NEW_COMMENT_ON_POST":
+            message = "прокомментировал ваш пост";
+            break;
+        case "POST_UPVOTE":
+            message = "оценил ваш пост";
+            break;
+        case "NEW_POST_IN_SUB":
+            message = "опубликовал новый пост в сообществе";
+            linkText = notif.post.community.name;
+            break;
+    }
+
+    return (
+        <div className="group flex items-start gap-3 p-3 hover:bg-gray-50 border-b last:border-b-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+                src={notif.sender.avatarUrl || "/default-avatar.png"}
+                alt="avatar"
+                className="h-8 w-8 rounded-full mt-1"
+            />
+            <div className="text-sm flex-grow">
+                <p className="leading-tight">
+                    <Link
+                        href={`/u/${notif.sender.username}`}
+                        className="font-bold hover:underline"
+                    >
+                        {notif.sender.username}
+                    </Link>{" "}
+                    {message}{" "}
+                    <button
+                        onClick={() => onNavigate(notif)}
+                        className="font-semibold text-blue-600 hover:underline text-left"
+                    >
+                        {linkText}
+                    </button>
+                </p>
+                {/* Показываем название поста, если это уведомление о новом посте в сообществе */}
+                {notif.type === "NEW_POST_IN_SUB" && (
+                    <p className="text-xs text-gray-500 italic mt-1">
+                        &quot;{notif.post.title}&quot;
+                    </p>
+                )}
+                <p className="text-xs text-gray-400 mt-1">
+                    {new Date(notif.createdAt).toLocaleString("ru-RU")}
+                </p>
+            </div>
+            <button
+                onClick={() => onMarkRead(notif.id)}
+                className="p-1 rounded-full opacity-0 group-hover:opacity-100 hover:bg-green-100 text-gray-400 hover:text-green-600 transition-opacity"
+                title="Отметить как прочитанное"
+            >
+                <Check className="h-4 w-4" />
+            </button>
+        </div>
+    );
+};
+
 export const NotificationsDropdown = () => {
     const queryClient = useQueryClient();
-    const router = useRouter(); // 2. Инициализируем роутер
+    const router = useRouter();
     const [isOpen, setIsOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
     const { data: notifications, isLoading } = useQuery({
         queryKey: ["notifications"],
         queryFn: fetchNotifications,
-        staleTime: 60 * 1000, // Кешировать на 1 минуту
-        refetchInterval: 60 * 1000, // Проверять новые раз в минуту
+        staleTime: 60 * 1000,
+        refetchInterval: 60 * 1000,
     });
 
     const mutation = useMutation({
@@ -48,15 +124,23 @@ export const NotificationsDropdown = () => {
     });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const handleNotificationClick = async (notif: any) => {
-        // Сначала отмечаем как прочитанное
+    const handleNavigate = async (notif: any) => {
         await mutation.mutateAsync(notif.id);
-        // Затем закрываем меню
         setIsOpen(false);
-        // И переходим на нужную страницу с якорем
-        router.push(
-            `/s/${notif.post.community.slug}/post/${notif.post.id}#comment-${notif.commentId}`
-        );
+
+        let linkHref = "#";
+        if (notif.post) {
+            linkHref = `/s/${notif.post.community.slug}/post/${notif.post.id}`;
+            if (notif.type === "NEW_REPLY" && notif.commentId) {
+                linkHref += `#comment-${notif.commentId}`;
+            }
+        }
+
+        router.push(linkHref);
+    };
+
+    const handleMarkRead = (notificationId: string) => {
+        mutation.mutate(notificationId);
     };
 
     // Закрытие по клику вне меню
@@ -109,54 +193,12 @@ export const NotificationsDropdown = () => {
                         {/* eslint-disable-next-line
                         @typescript-eslint/no-explicit-any */}
                         {notifications?.map((notif: any) => (
-                            <div
+                            <NotificationItem
                                 key={notif.id}
-                                className="group flex items-start gap-3 p-3 hover:bg-gray-50 border-b last:border-b-0"
-                            >
-                                {/* eslint-disable-next-line
-                                @next/next/no-img-element */}
-                                <img
-                                    src={
-                                        notif.sender.avatarUrl ||
-                                        "/default-avatar.png"
-                                    }
-                                    alt="avatar"
-                                    className="h-8 w-8 rounded-full mt-1"
-                                />
-                                <div className="text-sm flex-grow">
-                                    <p>
-                                        {/* Имя пользователя отдельная ссылка */}
-                                        <Link
-                                            href={`/u/${notif.sender.username}`}
-                                            className="font-bold hover:underline"
-                                        >
-                                            {notif.sender.username}
-                                        </Link>
-                                        {" ответил на ваш комментарий в посте "}
-                                        {/* Название поста отдельная ссылка */}
-                                        <button
-                                            onClick={() =>
-                                                handleNotificationClick(notif)
-                                            }
-                                            className="font-semibold text-blue-600 hover:underline text-left"
-                                        >
-                                            {notif.post.title}
-                                        </button>
-                                    </p>
-                                    <p className="text-xs text-gray-400 mt-1">
-                                        {new Date(
-                                            notif.createdAt
-                                        ).toLocaleString("ru-RU")}
-                                    </p>
-                                </div>
-                                <button
-                                    onClick={() => mutation.mutate(notif.id)}
-                                    className="p-1 rounded-full opacity-0 group-hover:opacity-100 hover:bg-green-100 text-gray-400 hover:text-green-600"
-                                    title="Отметить как прочитанное"
-                                >
-                                    <Check className="h-4 w-4" />
-                                </button>
-                            </div>
+                                notif={notif}
+                                onNavigate={handleNavigate}
+                                onMarkRead={handleMarkRead}
+                            />
                         ))}
                     </div>
                 </div>
