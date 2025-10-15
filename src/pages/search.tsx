@@ -16,6 +16,7 @@ type CommunitySearchResult = {
     slug: string;
     name: string;
     description: string | null;
+    imageUrl: string | null;
     _count: {
         subscribers: number;
     };
@@ -53,7 +54,18 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
                     { description: { contains: q, mode: "insensitive" } },
                 ],
             },
-            include: { _count: { select: { subscribers: true } } },
+            select: {
+                id: true,
+                slug: true,
+                name: true,
+                description: true,
+                imageUrl: true,
+                _count: {
+                    select: {
+                        subscribers: true,
+                    },
+                },
+            },
             take: RESULTS_PER_PAGE,
             orderBy: { subscribers: { _count: "desc" } },
         });
@@ -128,7 +140,7 @@ export default function SearchPage({
                 <span className="text-blue-600">&quot;{query}&quot;</span>
             </h1>
 
-            {/* ИСПРАВЛЕНИЕ: Добавляем рендер вкладок */}
+            {/* Добавляем рендер вкладок */}
             <div className="mt-4 border-b">
                 <nav className="-mb-px flex space-x-8">
                     <button
@@ -198,15 +210,31 @@ const CommunityCard = ({ community }: { community: CommunitySearchResult }) => (
         href={`/s/${community.slug}`}
         className="block rounded-lg border bg-white p-4 shadow-sm hover:border-blue-500 hover:shadow-md"
     >
-        <h2 className="text-xl font-bold text-gray-800 break-all">
-            с/{community.name}
-        </h2>
-        <p className="mt-1 text-sm text-gray-600 break-all">
-            {community.description || "Нет описания"}
-        </p>
-        <p className="mt-2 text-xs text-gray-500 break-all">
-            {community._count.subscribers} подписчиков
-        </p>
+        <div className="flex items-center gap-4">
+            {community.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                    src={community.imageUrl}
+                    alt="avatar"
+                    className="h-10 w-10 rounded-full object-cover"
+                />
+            ) : (
+                <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-bold">
+                    с/
+                </div>
+            )}
+            <div>
+                <h2 className="text-xl font-bold text-gray-800 break-all">
+                    с/{community.name}
+                </h2>
+                <p className="mt-1 text-sm text-gray-600 break-all">
+                    {community.description || "Нет описания"}
+                </p>
+                <p className="mt-2 text-xs text-gray-500 break-all">
+                    {community._count.subscribers} подписчиков
+                </p>
+            </div>
+        </div>
     </Link>
 );
 

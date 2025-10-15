@@ -4,6 +4,17 @@ import type { NextApiRequest, NextApiResponse } from "next";
 
 const prisma = new PrismaClient();
 
+// Вспомогательная функция для создания слага
+const slugify = (text: string) => {
+    return text
+        .toString()
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, "-") // Заменяем пробелы на -
+        .replace(/[^\w\-]+/g, "") // Удаляем все не-буквенно-цифровые символы
+        .replace(/\-\-+/g, "-"); // Заменяем несколько -- на один -
+};
+
 interface JwtPayload {
     userId: string;
 }
@@ -23,28 +34,49 @@ export default async function handler(
 
     try {
         const { userId } = verify(token, process.env.JWT_SECRET!) as JwtPayload;
-        const { communityId, description } = req.body;
+        // 1. Получаем `name`, `description`, `imageUrl`
+        const { communityId, name, description, imageUrl } = req.body;
 
-        // 1. Находим сообщество, чтобы проверить, существует ли оно
+        // Находим сообщество, чтобы проверить, существует ли оно
         const community = await prisma.community.findUnique({
             where: { id: communityId },
         });
+        if (!community)
+            return res.status(404).json({ message: "Сообщество не найдено" });
+        if (community.creatorId !== userId)
+            return res.status(403).json({ message: "Нет доступа" });
 
-        if (!community) {
-            return res.status(404).json({ message: "Community not found" });
-        }
-
-        // 2. Проверяем, является ли текущий пользователь создателем этого сообщества
-        if (community.creatorId !== userId) {
+        // 2. Валидация для нового имени
+        if (name && (name.trim().length < 3 || name.length > 30)) {
             return res
-                .status(403)
-                .json({ message: "Only the creator can edit this community" });
+                .status(400)
+                .json({ message: "Название должно быть от 3 до 30 символов." });
         }
 
-        // 3. Если все проверки пройдены, обновляем данные
+        // 3. Создаем новый slug, если имя изменилось
+        let newSlug = community.slug;
+        if (name && name !== community.name) {
+            newSlug = slugify(name);
+            // Проверяем, не занят ли новый slug
+            const existing = await prisma.community.findUnique({
+                where: { slug: newSlug },
+            });
+            if (existing && existing.id !== communityId) {
+                return res
+                    .status(409)
+                    .json({ message: "Такое имя уже занято." });
+            }
+        }
+
+        // 4. Если все проверки пройдены, обновляем данные
         const updatedCommunity = await prisma.community.update({
             where: { id: communityId },
-            data: { description },
+            data: {
+                name: name ?? undefined,
+                slug: newSlug,
+                description: description ?? undefined,
+                imageUrl: imageUrl ?? undefined,
+            },
         });
 
         return res.status(200).json(updatedCommunity);

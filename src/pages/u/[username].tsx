@@ -80,7 +80,12 @@ export const getServerSideProps = (async (context) => {
             },
             createdCommunities: {
                 orderBy: { createdAt: "desc" },
-                include: {
+                select: {
+                    id: true,
+                    slug: true,
+                    name: true,
+                    description: true,
+                    imageUrl: true,
                     _count: { select: { subscribers: true } },
                 },
             },
@@ -429,16 +434,38 @@ export default function UserProfilePage({
                                         href={`/s/${community.slug}`}
                                         className="block rounded-lg border bg-white p-4 shadow-sm hover:border-blue-500 hover:shadow-md break-all"
                                     >
-                                        <h3 className="font-bold text-lg break-all">
-                                            с/{community.name}
-                                        </h3>
-                                        <p className="text-sm text-gray-600 mt-1 break-all">
-                                            {community.description}
-                                        </p>
-                                        <p className="text-xs text-gray-500 mt-2">
-                                            {community._count.subscribers}{" "}
-                                            подписчиков
-                                        </p>
+                                        <div className="flex items-center gap-4">
+                                            {/* Добавляем аватар сообщества */}
+                                            {community.imageUrl ? (
+                                                // eslint-disable-next-line @next/next/no-img-element
+                                                <img
+                                                    src={community.imageUrl}
+                                                    alt={`Аватар с/${community.name}`}
+                                                    className="h-10 w-10 rounded-full object-cover"
+                                                />
+                                            ) : (
+                                                <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                                                    <span className="font-bold text-gray-500">
+                                                        с/
+                                                    </span>
+                                                </div>
+                                            )}
+                                            <div>
+                                                <h3 className="font-bold text-lg break-all">
+                                                    с/{community.name}
+                                                </h3>
+                                                <p className="text-sm text-gray-600 mt-1 break-all">
+                                                    {community.description}
+                                                </p>
+                                                <p className="text-xs text-gray-500 mt-2 break-all">
+                                                    {
+                                                        community._count
+                                                            .subscribers
+                                                    }{" "}
+                                                    подписчиков
+                                                </p>
+                                            </div>
+                                        </div>
                                     </Link>
                                 )
                             )

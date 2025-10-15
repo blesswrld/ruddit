@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Post, Vote, Image } from "@prisma/client";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { verify } from "jsonwebtoken";
 
@@ -9,6 +9,14 @@ const POSTS_PER_PAGE = 5; // Определяем, сколько постов �
 interface JwtPayload {
     userId: string;
 }
+
+// Кастомный тип, который будет возвращать наш API
+type PostWithRelations = Post & {
+    author: { username: string | null; id: string };
+    community: { slug: string };
+    votes: Vote[];
+    images: Image[];
+};
 
 export default async function handler(
     req: NextApiRequest,
@@ -23,7 +31,7 @@ export default async function handler(
     const feedType = req.query.feedType || "new"; // По умолчанию - лента "Новое"
 
     try {
-        let posts;
+        let posts: (PostWithRelations | undefined)[] = [];
 
         if (feedType === "subscribed") {
             const { token } = req.cookies;
@@ -69,43 +77,50 @@ export default async function handler(
             // Блок для "Горячего"
             const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-            // Сырой SQL-запрос для сортировки по "горячему"
-            const hotPosts: { id: string }[] = await prisma.$queryRaw`
-                SELECT p.id,
-                    -- Формула Reddit Hot Ranking
-                    LOG(GREATEST(ABS(
-                        (SELECT COUNT(*) FROM "Vote" v WHERE v."postId" = p.id AND v.type = 'UP') -
-                        (SELECT COUNT(*) FROM "Vote" v WHERE v."postId" = p.id AND v.type = 'DOWN')
-                    ), 1)) *
-                    SIGN(
-                        (SELECT COUNT(*) FROM "Vote" v WHERE v."postId" = p.id AND v.type = 'UP') -
-                        (SELECT COUNT(*) FROM "Vote" v WHERE v."postId" = p.id AND v.type = 'DOWN')
-                    ) +
-                    EXTRACT(EPOCH FROM p."createdAt") / 45000 AS score
-                FROM "Post" p
-                WHERE p."createdAt" >= ${sevenDaysAgo}
-                ORDER BY score DESC
-                LIMIT ${POSTS_PER_PAGE}
-                OFFSET ${(page - 1) * POSTS_PER_PAGE};
-            `;
-
-            const postIds = hotPosts.map((p) => p.id);
-
-            // Дозагружаем полные данные для найденных постов
-            const postsWithRelations = await prisma.post.findMany({
-                where: { id: { in: postIds } },
-                include: {
-                    author: { select: { username: true, id: true } },
-                    community: { select: { slug: true } },
-                    votes: true,
-                    images: true,
-                },
+            // 1. Получаем все посты за последнюю неделю с их голосами
+            const allPosts = await prisma.post.findMany({
+                where: { createdAt: { gte: sevenDaysAgo } },
+                include: { votes: true },
             });
 
-            // Восстанавливаем правильный порядок, так как findMany его сбивает
-            posts = postIds
-                .map((id) => postsWithRelations.find((p) => p.id === id))
-                .filter(Boolean);
+            // 2. Считаем рейтинг и "очки горячего" для каждого поста
+            const scoredPosts = allPosts.map((post) => {
+                const score = post.votes.reduce((acc, vote) => {
+                    return acc + (vote.type === "UP" ? 1 : -1);
+                }, 0);
+
+                const hoursAgo =
+                    (Date.now() - new Date(post.createdAt).getTime()) /
+                    (1000 * 60 * 60);
+                // Простая формула: Рейтинг / (Возраст в часах + 2)^1.8
+                const hotScore = (score - 1) / Math.pow(hoursAgo + 2, 1.8);
+
+                return { ...post, hotScore };
+            });
+
+            // 3. Сортируем по "горячему"
+            scoredPosts.sort((a, b) => b.hotScore - a.hotScore);
+
+            // 4. Берем нужную "страницу" ID-шников
+            const paginatedPostIds = scoredPosts
+                .slice((page - 1) * POSTS_PER_PAGE, page * POSTS_PER_PAGE)
+                .map((p) => p.id);
+
+            // 5. Загружаем полные данные в правильном порядке
+            if (paginatedPostIds.length > 0) {
+                const postsWithRelations = await prisma.post.findMany({
+                    where: { id: { in: paginatedPostIds } },
+                    include: {
+                        author: { select: { username: true, id: true } },
+                        community: { select: { slug: true } },
+                        votes: true,
+                        images: true,
+                    },
+                });
+                posts = paginatedPostIds.map((id) =>
+                    postsWithRelations.find((p) => p.id === id)
+                );
+            }
         } else {
             // 'new'
             // Для ленты "Новое" просто берем все посты
@@ -124,7 +139,7 @@ export default async function handler(
             });
         }
 
-        return res.status(200).json(posts);
+        return res.status(200).json(posts.filter(Boolean));
     } catch (error) {
         // Если токен невалидный, verify выбросит ошибку, и мы вернем пустой массив
         if (error instanceof Error && error.name === "JsonWebTokenError") {

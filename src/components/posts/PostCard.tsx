@@ -338,7 +338,7 @@ export const PostCard = ({ post }: PostCardProps) => {
                                         </button>
                                         <button
                                             onClick={handleDelete}
-                                            className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 border-none outline-none ring-0 focus:ring-0"
+                                            className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 border-none outline-none"
                                         >
                                             Удалить
                                         </button>

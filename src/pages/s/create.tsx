@@ -63,7 +63,7 @@ export default function CreateCommunityPage() {
                         onChange={(e) => setDescription(e.target.value)}
                         disabled={isLoading}
                         rows={4}
-                        className="w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:outline-none focus:ring-0"
                     />
                 </div>
 
@@ -72,7 +72,7 @@ export default function CreateCommunityPage() {
                 <Button
                     type="submit"
                     disabled={isLoading}
-                    className="border-none outline-none ring-0 focus:ring-0"
+                    className="border-none outline-none"
                 >
                     {isLoading ? "Создание..." : "Создать сообщество"}
                 </Button>

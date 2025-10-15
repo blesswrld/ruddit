@@ -2,9 +2,10 @@ import { Button } from "@/components/common/Button";
 import { PrismaClient } from "@prisma/client";
 import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
 import { useRouter } from "next/router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { verify } from "jsonwebtoken";
 import toast from "react-hot-toast";
+import { Input } from "@/components/common/Input";
 
 const prisma = new PrismaClient();
 
@@ -61,8 +62,12 @@ export default function CommunitySettingsPage({
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
     const router = useRouter();
     const [description, setDescription] = useState(community.description || "");
+    const [name, setName] = useState(community.name);
+    const [file, setFile] = useState<File | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState("");
+
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleDelete = async () => {
         if (
@@ -98,57 +103,137 @@ export default function CommunitySettingsPage({
         }
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
+        // Делаем async
         e.preventDefault();
         setIsLoading(true);
         setMessage("");
 
-        toast
-            .promise(
-                fetch("/api/communities/update", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        communityId: community.id,
-                        description,
-                    }),
-                    credentials: "include",
-                }).then(async (response) => {
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(
-                            errorData.message ||
-                                "Не удалось обновить сообщество"
-                        );
+        let uploadedImageUrl = community.imageUrl;
+
+        // Логика загрузки файла, если он был выбран
+        if (file) {
+            try {
+                const signResponse = await fetch(
+                    "/api/users/sign-yandex-upload",
+                    {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            filename: file.name,
+                            contentType: file.type,
+                            folder: "community_avatars", // Папка
+                        }),
                     }
-                }),
-                {
-                    loading: "Сохранение изменений...",
-                    success: () => {
-                        setMessage("Сообщество успешно обновлено!"); // Можно оставить для текста под формой
-                        setTimeout(
-                            () => router.push(`/s/${community.slug}`),
-                            1500
-                        );
-                        return "Сообщество успешно обновлено!";
-                    },
-                    error: (err) => {
-                        setMessage(`Произошла ошибка: ${err.message}`);
-                        return `Произошла ошибка: ${err.message}`;
-                    },
-                }
-            )
-            .finally(() => {
+                );
+                if (!signResponse.ok)
+                    throw new Error("Не удалось получить подпись для файла.");
+
+                const { signedUrl, publicUrl } = await signResponse.json();
+
+                const uploadResponse = await fetch(signedUrl, {
+                    method: "PUT",
+                    body: file,
+                    headers: { "Content-Type": file.type },
+                });
+                if (!uploadResponse.ok)
+                    throw new Error("Не удалось загрузить файл.");
+
+                uploadedImageUrl = publicUrl;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } catch (error: any) {
+                setMessage(`Ошибка загрузки: ${error.message}`);
+                toast.error(`Ошибка загрузки: ${error.message}`);
                 setIsLoading(false);
+                return;
+            }
+        }
+
+        // Используем try/catch для простоты
+        try {
+            const response = await fetch("/api/communities/update", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    communityId: community.id,
+                    name,
+                    description,
+                    imageUrl: uploadedImageUrl,
+                }),
+                credentials: "include",
             });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(
+                    errorData.message || "Не удалось обновить сообщество"
+                );
+            }
+
+            // Получаем обновленные данные, включая новый slug
+            const updatedCommunity = await response.json();
+
+            toast.success("Сообщество успешно обновлено!");
+            // Используем новый slug для редиректа
+            router.push(`/s/${updatedCommunity.slug}`);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } catch (error: any) {
+            setMessage(`Произошла ошибка: ${error.message}`);
+            toast.error(`Произошла ошибка: ${error.message}`);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
         <div className="mx-auto max-w-2xl rounded-md bg-white p-6 shadow">
-            <h1 className="mb-4 text-2xl font-bold">
+            <h1 className="mb-4 text-2xl font-bold break-all">
                 Настройки с/{community.name}
             </h1>
             <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+                {/* Загрузка аватарки */}
+                <div>
+                    <label className="mb-1 block text-sm font-medium">
+                        Аватар сообщества
+                    </label>
+                    <div className="flex items-center gap-4 mt-2">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                            src={
+                                file
+                                    ? URL.createObjectURL(file)
+                                    : community.imageUrl ||
+                                      "/default-community.png"
+                            }
+                            alt="Аватар"
+                            className="h-20 w-20 rounded-full object-cover"
+                        />
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) =>
+                                setFile(
+                                    e.target.files ? e.target.files[0] : null
+                                )
+                            }
+                            ref={fileInputRef} // Привязываем ref
+                            disabled={isLoading} // Добавляем disabled
+                            className="block w-full text-sm text-gray-500 file:mr-4 file:rounded-full file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-blue-700 hover:file:bg-blue-100"
+                        />
+                    </div>
+                </div>
+
+                <div>
+                    <Input
+                        id="community-name"
+                        label="Название сообщества"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        disabled={isLoading}
+                        maxLength={30}
+                    />
+                </div>
+
                 <div>
                     <label
                         htmlFor="community-desc"
@@ -161,7 +246,7 @@ export default function CommunitySettingsPage({
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
                         rows={5}
-                        className="w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:outline-none focus:ring-0"
                         disabled={isLoading}
                     />
                 </div>
@@ -172,7 +257,7 @@ export default function CommunitySettingsPage({
                     <Button
                         type="submit"
                         disabled={isLoading}
-                        className="w-auto border-none outline-none ring-0 focus:ring-0"
+                        className="w-auto border-none outline-none"
                     >
                         {isLoading ? "Сохранение..." : "Сохранить"}
                     </Button>
@@ -190,7 +275,7 @@ export default function CommunitySettingsPage({
                         <Button
                             onClick={handleDelete}
                             disabled={isLoading}
-                            className="w-full h-fit bg-red-600 text-white hover:bg-red-800 disabled:bg-red-300 border-none outline-none ring-0 focus:ring-0"
+                            className="w-full h-fit bg-red-600 text-white hover:bg-red-800 disabled:bg-red-300 border-none outline-none"
                         >
                             {isLoading
                                 ? "Удаление..."

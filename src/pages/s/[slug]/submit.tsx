@@ -138,7 +138,7 @@ export default function CommunitySubmitPage({ community }: SubmitPageProps) {
 
     return (
         <div className="mx-auto max-w-3xl rounded-md bg-white p-6 shadow">
-            <h1 className="mb-1 text-2xl font-bold">
+            <h1 className="mb-1 text-2xl font-bold break-all">
                 Создать пост в с/{community.name}
             </h1>
             <hr className="mb-4" />
@@ -159,7 +159,7 @@ export default function CommunitySubmitPage({ community }: SubmitPageProps) {
                         required
                         maxLength={TITLE_MAX_LENGTH}
                         disabled={isLoading}
-                        className="w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:outline-none focus:ring-0"
                     />
                     <p
                         className={`mt-1 text-right text-xs ${
@@ -187,7 +187,7 @@ export default function CommunitySubmitPage({ community }: SubmitPageProps) {
                         disabled={isLoading}
                         rows={10}
                         maxLength={CONTENT_MAX_LENGTH}
-                        className="w-full rounded-md border border-gray-300 p-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="w-full rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-0"
                     />
                     <p
                         className={`mt-1 text-right text-xs ${

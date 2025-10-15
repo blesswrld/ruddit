@@ -241,7 +241,7 @@ export const Comment = ({ comment, postInfo }: CommentProps) => {
                             </button>
                             <button
                                 onClick={handleDelete}
-                                className="text-xs font-semibold text-gray-600 hover:text-red-600 border-none outline-none ring-0 focus:ring-0"
+                                className="text-xs font-semibold text-gray-600 hover:text-red-600 border-none outline-none"
                             >
                                 Удалить
                             </button>
@@ -283,7 +283,7 @@ export const Comment = ({ comment, postInfo }: CommentProps) => {
                                     editedText.trim() === "" ||
                                     editedText.length > CONTENT_MAX_LENGTH
                                 }
-                                className="rounded-full bg-blue-500 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-600 disabled:opacity-50 border-none outline-none ring-0 focus:ring-0"
+                                className="rounded-full bg-blue-500 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-600 disabled:opacity-50 border-none outline-none"
                             >
                                 {isLoading ? "..." : "Сохранить"}
                             </button>
@@ -298,7 +298,7 @@ export const Comment = ({ comment, postInfo }: CommentProps) => {
                 {!isEditing && (
                     <button
                         onClick={() => setIsReplying(!isReplying)}
-                        className="mt-2 flex items-center gap-1 text-xs font-semibold text-gray-600 hover:text-gray-900 border-none outline-none ring-0 focus:ring-0"
+                        className="mt-2 flex items-center gap-1 text-xs font-semibold text-gray-600 hover:text-gray-900 border-none"
                     >
                         <MessageSquareReply className="h-4 w-4" />
                         Ответить
@@ -344,7 +344,7 @@ export const Comment = ({ comment, postInfo }: CommentProps) => {
                                 replyText.trim() === "" ||
                                 replyText.length > CONTENT_MAX_LENGTH
                             }
-                            className="rounded-full bg-blue-500 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-600 disabled:opacity-50 border-none outline-none ring-0 focus:ring-0"
+                            className="rounded-full bg-blue-500 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-600 disabled:opacity-50 border-none outline-none"
                         >
                             {isLoading ? "..." : "Ответить"}
                         </button>

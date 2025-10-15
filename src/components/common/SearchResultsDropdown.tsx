@@ -8,6 +8,7 @@ type CommunityResult = {
     id: string;
     slug: string;
     name: string;
+    imageUrl: string | null;
     _count: { subscribers: number };
 };
 
@@ -112,14 +113,32 @@ export const SearchResultsDropdown = ({
                                 key={community.id}
                                 href={`/s/${community.slug}`}
                                 onClick={closeDropdown}
-                                className="block rounded px-2 py-2 hover:bg-gray-100"
+                                className="flex items-center gap-3 rounded px-2 py-2 hover:bg-gray-100"
                             >
-                                <p className="font-semibold text-sm">
-                                    с/{community.name}
-                                </p>
-                                <p className="text-xs text-gray-500">
-                                    {community._count.subscribers} подписчиков
-                                </p>
+                                {/* Аватар сообщества */}
+                                {community.imageUrl ? (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img
+                                        src={community.imageUrl}
+                                        alt={`Аватар с/${community.name}`}
+                                        className="h-6 w-6 rounded-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="h-6 w-6 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                                        <span className="font-bold text-gray-500 text-xs">
+                                            с/
+                                        </span>
+                                    </div>
+                                )}
+                                <div>
+                                    <p className="font-semibold text-sm break-all">
+                                        с/{community.name}
+                                    </p>
+                                    <p className="text-xs text-gray-500 break-all">
+                                        {community._count.subscribers}{" "}
+                                        подписчиков
+                                    </p>
+                                </div>
                             </Link>
                         ))}
                     </div>

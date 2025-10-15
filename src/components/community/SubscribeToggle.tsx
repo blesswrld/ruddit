@@ -42,8 +42,8 @@ export const SubscribeToggle = ({
             disabled={isLoading}
             className={`w-auto px-6 py-2 text-sm font-bold ${
                 isSubscribed
-                    ? "bg-red-600 text-white hover:bg-red-800 border-none outline-none ring-0 focus:ring-0"
-                    : "bg-blue-600 text-white hover:bg-blue-700 border-none outline-none ring-0 focus:ring-0"
+                    ? "bg-red-600 text-white hover:bg-red-800 border-none outline-none"
+                    : "bg-blue-600 text-white hover:bg-blue-700 border-none outline-none"
             }`}
         >
             {isSubscribed ? "Покинуть" : "Вступить"}

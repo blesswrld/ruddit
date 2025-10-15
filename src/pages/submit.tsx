@@ -255,7 +255,7 @@ export default function GlobalSubmitPage({
                         value={communityId}
                         onChange={(e) => setCommunityId(e.target.value)}
                         disabled={isLoading}
-                        className="w-full rounded-md border border-gray-300 p-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="w-full rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-0"
                     >
                         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                         {communities.map((community: any) => (
@@ -282,7 +282,7 @@ export default function GlobalSubmitPage({
                         required
                         maxLength={TITLE_MAX_LENGTH}
                         disabled={isLoading}
-                        className="w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:outline-none focus:ring-0"
                     />
                     <p
                         className={`mt-1 text-right text-xs ${
@@ -310,7 +310,7 @@ export default function GlobalSubmitPage({
                         disabled={isLoading}
                         rows={10}
                         maxLength={CONTENT_MAX_LENGTH}
-                        className="w-full rounded-md border border-gray-300 p-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="w-full rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-0"
                     />
                     <p
                         className={`mt-1 text-right text-xs ${

@@ -51,7 +51,7 @@ export const SearchInput = () => {
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
                     onFocus={() => setIsDropdownVisible(true)}
-                    className="block w-full rounded-md border border-gray-300 bg-gray-50 py-2 pl-10 pr-3 text-sm placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="block w-full rounded-md border border-gray-300 bg-gray-50 py-2 pl-10 pr-3 text-sm placeholder-gray-500 focus:outline-none focus:ring-0"
                     placeholder="Поиск сообществ или пользователей"
                     autoComplete="off"
                 />

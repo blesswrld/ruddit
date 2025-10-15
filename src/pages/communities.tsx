@@ -12,6 +12,7 @@ type CommunityInList = {
     slug: string;
     name: string;
     description: string | null;
+    imageUrl: string | null;
     _count: {
         subscribers: number;
     };
@@ -46,9 +47,14 @@ export const getServerSideProps: GetServerSideProps<
                 ) as JwtPayload;
                 const subscriptions = await prisma.subscription.findMany({
                     where: { userId },
-                    include: {
+                    select: {
                         community: {
-                            include: {
+                            select: {
+                                id: true,
+                                name: true,
+                                slug: true,
+                                description: true,
+                                imageUrl: true,
                                 _count: { select: { subscribers: true } },
                             },
                         },
@@ -64,7 +70,14 @@ export const getServerSideProps: GetServerSideProps<
     } else {
         communities = await prisma.community.findMany({
             orderBy: { subscribers: { _count: "desc" } },
-            include: { _count: { select: { subscribers: true } } },
+            select: {
+                id: true,
+                name: true,
+                slug: true,
+                description: true,
+                imageUrl: true,
+                _count: { select: { subscribers: true } },
+            },
         });
     }
 
@@ -118,7 +131,7 @@ export default function CommunitiesPage({
                 </h1>
                 <Link
                     href="/s/create"
-                    className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 border-none outline-none ring-0 focus:ring-0"
+                    className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 border-none outline-none"
                 >
                     Создать свое
                 </Link>
@@ -138,15 +151,31 @@ export default function CommunitiesPage({
                                     <span className="text-lg font-bold text-gray-500">
                                         {index + 1}
                                     </span>
+
+                                    {/* Аватар сообщества */}
+                                    {community.imageUrl ? (
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img
+                                            src={community.imageUrl}
+                                            alt={`Аватар с/${community.name}`}
+                                            className="h-8 w-8 rounded-full object-cover flex-shrink-0"
+                                        />
+                                    ) : (
+                                        <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                                            <span className="font-bold text-gray-500">
+                                                с/
+                                            </span>
+                                        </div>
+                                    )}
                                     <div>
-                                        <h2 className="text-xl font-bold text-gray-800">
+                                        <h2 className="text-xl font-bold text-gray-800 break-all">
                                             с/{community.name}
                                         </h2>
                                         <p className="mt-1 text-sm text-gray-600 break-all">
                                             {community.description ||
                                                 "Нет описания"}
                                         </p>
-                                        <p className="mt-2 text-xs text-gray-500">
+                                        <p className="mt-2 text-xs text-gray-500 break-all">
                                             {community._count.subscribers}{" "}
                                             подписчиков
                                         </p>

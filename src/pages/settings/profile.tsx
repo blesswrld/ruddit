@@ -441,7 +441,7 @@ export default function ProfileSettingsPage() {
                         // Блокируем кнопку, если превышен лимит
                         disabled={isLoading || bio.length > 210}
                         variant="primary"
-                        className="w-auto text-black hover:opacity-80 border-none outline-none ring-0 focus:ring-0"
+                        className="w-auto text-black hover:opacity-80 border-none outline-none"
                     >
                         {isLoading ? "Сохранение..." : "Сохранить изменения"}
                     </Button>
@@ -460,7 +460,7 @@ export default function ProfileSettingsPage() {
                         onClick={handleDeleteAccount}
                         disabled={isLoading}
                         variant="danger" // Используем наш вариант
-                        className="w-auto border-none outline-none ring-0 focus:ring-0"
+                        className="w-auto border-none outline-none"
                     >
                         {isLoading ? "Удаление..." : "Удалить аккаунт"}
                     </Button>

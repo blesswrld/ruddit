@@ -60,7 +60,7 @@ export const Header = () => {
                     <Link
                         href="/submit"
                         title="Создать пост"
-                        className="rounded-md p-2 hover:bg-gray-100 border-none outline-none ring-0 focus:ring-0"
+                        className="rounded-md p-2 hover:bg-gray-100 border-none outline-none"
                     >
                         <Plus className="h-6 w-6 text-gray-700" />
                     </Link>

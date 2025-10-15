@@ -39,15 +39,17 @@ export const getServerSideProps = (async (context) => {
             _count: {
                 select: { subscribers: true },
             },
+            // Загружаем `subscribers` целиком, а не только _count
             subscribers: {
                 where: {
                     userId: currentUserId ?? undefined,
                 },
+                select: { userId: true }, // Загружаем только ID для проверки
             },
             posts: {
                 orderBy: { createdAt: "desc" },
                 include: {
-                    author: { select: { username: true } },
+                    author: { select: { username: true, id: true } },
                     votes: true,
                     images: true,
                     community: { select: { slug: true } },
@@ -90,12 +92,27 @@ export default function CommunityPage({
             <div className="bg-white">
                 <div className="container mx-auto px-4 py-8">
                     <div className="flex items-center justify-between">
-                        <div>
-                            <h1 className="text-3xl font-bold">
-                                {community.name}
-                            </h1>
-                            <p className="text-gray-500">с/{community.slug}</p>
+                        <div className="flex items-center gap-4">
+                            {/* Аватар */}
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                                src={
+                                    community.imageUrl ||
+                                    "/default-community.png"
+                                }
+                                alt="Аватар"
+                                className="h-16 w-16 rounded-full"
+                            />
+                            <div>
+                                <h1 className="text-3xl font-bold break-all">
+                                    {community.name}
+                                </h1>
+                                <p className="text-gray-500">
+                                    с/{community.slug}
+                                </p>
+                            </div>
                         </div>
+
                         {isAuthenticated && (
                             <SubscribeToggle
                                 initialIsSubscribed={isSubscribed}
@@ -157,7 +174,9 @@ export default function CommunityPage({
                                     п/{community.creator.username}
                                 </Link>
                             </p>
-                            <p>Подписчиков: {subscriberCount}</p>
+                            <p className="break-all">
+                                Подписчиков: {subscriberCount}
+                            </p>
 
                             {/* Кнопка настроек для создателя */}
                             {isCreator && (
@@ -166,7 +185,7 @@ export default function CommunityPage({
                                         href={`/s/${community.slug}/settings`}
                                     >
                                         <Button
-                                            className="w-full border-none outline-none ring-0 focus:ring-0"
+                                            className="w-full border-none outline-none"
                                             variant="primary"
                                         >
                                             Настройки сообщества

@@ -29,7 +29,11 @@ export default async function handler(
                         mode: "insensitive",
                     },
                 },
-                include: {
+                select: {
+                    id: true,
+                    slug: true,
+                    name: true,
+                    imageUrl: true,
                     _count: { select: { subscribers: true } },
                 },
                 take: 5, // Ограничиваем до 5 для выпадающего списка
