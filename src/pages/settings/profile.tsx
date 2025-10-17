@@ -23,6 +23,9 @@ export default function ProfileSettingsPage() {
     const [musicFile, setMusicFile] = useState<File | null>(null);
     const musicFileInputRef = useRef<HTMLInputElement>(null);
 
+    // Состояние для отслеживания URL музыки
+    const [currentMusicUrl, setCurrentMusicUrl] = useState<string | null>(null);
+
     // Состояние для всех ссылок
     const [links, setLinks] = useState({
         telegram: "",
@@ -48,6 +51,7 @@ export default function ProfileSettingsPage() {
                 customUrl: user.linkCustomUrl || "",
             });
             setBannerColor(user.profileBannerColor || "");
+            setCurrentMusicUrl(user.profileMusicUrl || null);
             setFile(null);
             if (fileInputRef.current) fileInputRef.current.value = "";
             setMessage("");
@@ -89,7 +93,7 @@ export default function ProfileSettingsPage() {
         // Используем toast.promise для всей цепочки
         const savePromise = (async () => {
             let uploadedAvatarUrl = user?.avatarUrl;
-            let uploadedMusicUrl = user?.profileMusicUrl;
+            let uploadedMusicUrl = currentMusicUrl;
 
             // 1. Если выбран новый аватар, загружаем его
             if (file) {
@@ -175,7 +179,7 @@ export default function ProfileSettingsPage() {
                 success: (updatedUser) => {
                     dispatch(updateUserProfile(updatedUser));
                     setMessage("Профиль успешно обновлен!");
-                    setFile(null); // Сбрасываем файлы после успеха
+                    setFile(null);
                     setMusicFile(null);
                     if (fileInputRef.current) fileInputRef.current.value = "";
                     if (musicFileInputRef.current)
@@ -218,6 +222,37 @@ export default function ProfileSettingsPage() {
         }
     };
 
+    // Обработчик для удаления трека
+    const handleRemoveMusic = async () => {
+        if (!confirm("Вы уверены, что хотите удалить трек из профиля?")) return;
+
+        setIsLoading(true);
+        try {
+            const response = await fetch("/api/users/profile", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ profileMusicUrl: null }), // Отправляем null для удаления
+                credentials: "include",
+            });
+            if (!response.ok) throw new Error("Не удалось удалить трек.");
+
+            const updatedUser = await response.json();
+            dispatch(updateUserProfile(updatedUser));
+
+            // Сразу обновляем локальное состояние
+            setCurrentMusicUrl(null);
+            setMusicFile(null);
+            if (musicFileInputRef.current) musicFileInputRef.current.value = "";
+
+            toast.success("Трек успешно удален.");
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } catch (error: any) {
+            toast.error(`Ошибка: ${error.message}`);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     // Пока идет проверка, ничего не показываем
     if (status !== "succeeded") {
         return <div className="container mx-auto p-6">Загрузка...</div>;
@@ -232,6 +267,7 @@ export default function ProfileSettingsPage() {
                     isLoading ? "pointer-events-none" : ""
                 }`}
             >
+                {/* Аватар */}
                 <div>
                     <label className="mb-1 block text-sm font-medium text-gray-700">
                         Аватар
@@ -257,6 +293,7 @@ export default function ProfileSettingsPage() {
                         />
                     </div>
                 </div>
+                {/* О себе */}
                 <div>
                     <label
                         htmlFor="user-bio"
@@ -283,8 +320,7 @@ export default function ProfileSettingsPage() {
                         {bio.length} / 210
                     </p>
                 </div>
-
-                {/* Секция для ссылок */}
+                {/* Соцсети */}
                 <div className="border-t pt-6">
                     <h2 className="text-lg font-semibold mb-4">
                         Социальные сети
@@ -352,78 +388,99 @@ export default function ProfileSettingsPage() {
                         />
                     </div>
                 </div>
-
-                {/* Загрузка музыки */}
+                {/* Музыка */}
                 <div className="border-t pt-6">
                     <h2 className="text-lg font-semibold">Музыка в профиле</h2>
                     <p className="text-sm text-gray-500 mb-2">
                         Загрузите один .mp3 файл, который будет играть в вашем
                         профиле.
                     </p>
-
-                    {/* Добавляем текущее имя файла */}
-                    <div className="flex items-center gap-4">
-                        {/* Иконка музыки */}
-                        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-500">
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="24"
-                                height="24"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
+                    {currentMusicUrl && !musicFile && (
+                        <div className="flex items-center justify-between text-sm mb-2 p-2 bg-gray-50 rounded-md">
+                            <div>
+                                Текущий трек:{" "}
+                                <span className="font-medium">
+                                    {currentMusicUrl
+                                        .split("/")
+                                        .pop()
+                                        ?.split("-")
+                                        .slice(1)
+                                        .join(" ")
+                                        .replace(".mp3", "")}
+                                </span>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={handleRemoveMusic}
+                                className="text-red-500 hover:text-red-700 font-semibold"
                             >
-                                <path d="M9 18V5l12-2v13" />
-                                <circle cx="6" cy="18" r="3" />
-                                <circle cx="18" cy="16" r="3" />
-                            </svg>
+                                Удалить
+                            </button>
                         </div>
-
-                        <div className="flex-grow">
-                            <label
-                                htmlFor="music-file-input"
-                                className="cursor-pointer rounded-md bg-white px-3 py-2 text-sm font-semibold text-blue-600 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
-                            >
-                                <span>Выберите файл</span>
-                                <input
-                                    id="music-file-input"
-                                    type="file"
-                                    accept="audio/mpeg" // Только mp3
-                                    onChange={(e) =>
-                                        setMusicFile(
-                                            e.target.files
-                                                ? e.target.files[0]
-                                                : null
-                                        )
-                                    }
-                                    disabled={isLoading}
-                                    ref={musicFileInputRef}
-                                    className="sr-only"
-                                />
-                            </label>
-                            <span className="ml-3 text-sm text-gray-500 break-all">
-                                {musicFile?.name ||
-                                    (user?.profileMusicUrl
-                                        ? "Текущий трек загружен"
-                                        : "Файл не выбран")}
-                            </span>
+                    )}
+                    {(!currentMusicUrl || musicFile) && (
+                        <div className="flex items-center gap-4">
+                            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-500">
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    width="24"
+                                    height="24"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                >
+                                    <path d="M9 18V5l12-2v13" />
+                                    <circle cx="6" cy="18" r="3" />
+                                    <circle cx="18" cy="16" r="3" />
+                                </svg>
+                            </div>
+                            <div className="flex-grow">
+                                <label
+                                    htmlFor="music-file-input"
+                                    className="cursor-pointer rounded-md bg-white px-3 py-2 text-sm font-semibold text-blue-600 ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+                                >
+                                    <span>
+                                        {musicFile
+                                            ? "Заменить файл"
+                                            : "Выберите файл"}
+                                    </span>
+                                    <input
+                                        id="music-file-input"
+                                        type="file"
+                                        accept="audio/mpeg"
+                                        onChange={(e) =>
+                                            setMusicFile(
+                                                e.target.files
+                                                    ? e.target.files[0]
+                                                    : null
+                                            )
+                                        }
+                                        disabled={isLoading}
+                                        ref={musicFileInputRef}
+                                        className="sr-only"
+                                    />
+                                </label>
+                                <span className="ml-3 text-sm text-gray-500 break-all">
+                                    {musicFile?.name || "Файл не выбран"}
+                                </span>
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
 
                 {message && <p className="text-sm text-green-600">{message}</p>}
 
-                {/* Добавляем кнопку "Отмена" */}
+                {/* Кнопки */}
                 <div className="flex justify-end gap-4">
                     <Button
                         type="button" // Важно: type="button", чтобы не отправлять форму
                         onClick={resetForm}
                         disabled={isLoading}
                         variant="secondary"
-                        className="w-auto text-black hover:opacity-80"
+                        className="w-auto"
                     >
                         Отмена
                     </Button>
@@ -438,7 +495,7 @@ export default function ProfileSettingsPage() {
                     </Button>
                 </div>
             </form>
-
+            {/* Опасная зона */}
             <div className="mt-8 border-t border-red-200 pt-6">
                 <h2 className="text-lg font-semibold text-red-700">
                     Опасная зона

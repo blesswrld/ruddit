@@ -59,7 +59,9 @@ export default async function handler(
                 linkCustomUrl: links?.customUrl || null,
 
                 // Сохраняем ссылку на музыку
-                profileMusicUrl: profileMusicUrl,
+                // Если пришла пустая строка, сохраняем null
+                profileMusicUrl:
+                    profileMusicUrl === "" ? null : profileMusicUrl,
 
                 // Сохраняем кастомный баннер
                 profileBannerColor,
