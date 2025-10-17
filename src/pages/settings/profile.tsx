@@ -1,7 +1,7 @@
 import { Button } from "@/components/common/Button";
 import { useAppSelector } from "@/store/hooks";
 import { useRouter } from "next/router";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useDispatch } from "react-redux";
 import { updateUserProfile } from "@/store/slices/authSlice";
 import { Input } from "@/components/common/Input";
@@ -23,8 +23,6 @@ export default function ProfileSettingsPage() {
     const [musicFile, setMusicFile] = useState<File | null>(null);
     const musicFileInputRef = useRef<HTMLInputElement>(null);
 
-    const [bannerColor, setBannerColor] = useState("");
-
     // Состояние для всех ссылок
     const [links, setLinks] = useState({
         telegram: "",
@@ -35,8 +33,10 @@ export default function ProfileSettingsPage() {
         customUrl: "",
     });
 
+    const [bannerColor, setBannerColor] = useState("");
+
     // Функция для сброса формы к начальным данным
-    const resetForm = () => {
+    const resetForm = useCallback(() => {
         if (user) {
             setBio(user.bio || "");
             setLinks({
@@ -47,6 +47,7 @@ export default function ProfileSettingsPage() {
                 customName: user.linkCustomName || "",
                 customUrl: user.linkCustomUrl || "",
             });
+            setBannerColor(user.profileBannerColor || "");
             setFile(null);
             if (fileInputRef.current) fileInputRef.current.value = "";
             setMessage("");
@@ -54,16 +55,12 @@ export default function ProfileSettingsPage() {
             setMusicFile(null);
             if (musicFileInputRef.current) musicFileInputRef.current.value = "";
         }
-    };
+    }, [user]);
 
     // Заполняем состояние при первой загрузке данных
     useEffect(() => {
-        if (user) {
-            resetForm();
-            setBannerColor(user.profileBannerColor || "");
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user]);
+        resetForm();
+    }, [resetForm]);
 
     // Функция для удобного обновления ссылок
     const handleLinkChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -89,13 +86,13 @@ export default function ProfileSettingsPage() {
         setIsLoading(true);
         setMessage("");
 
-        let uploadedAvatarUrl = user?.avatarUrl;
-        let uploadedMusicUrl = user?.profileMusicUrl;
+        // Используем toast.promise для всей цепочки
+        const savePromise = (async () => {
+            let uploadedAvatarUrl = user?.avatarUrl;
+            let uploadedMusicUrl = user?.profileMusicUrl;
 
-        // 1. Если выбран новый файл, загружаем его
-        if (file) {
-            try {
-                // 1.1 Получаем pre-signed URL и publicUrl с нашего бэкенда
+            // 1. Если выбран новый аватар, загружаем его
+            if (file) {
                 const signResponse = await fetch(
                     "/api/users/sign-yandex-upload",
                     {
@@ -108,33 +105,22 @@ export default function ProfileSettingsPage() {
                     }
                 );
                 if (!signResponse.ok)
-                    throw new Error("Не удалось получить ссылку для загрузки.");
-
+                    throw new Error("Не удалось получить подпись для аватара.");
                 const { signedUrl, publicUrl } = await signResponse.json();
 
-                // 1.2 Загружаем файл напрямую в Yandex Storage
+                // 1.1 Загружаем файл напрямую в Yandex Storage
                 const uploadResponse = await fetch(signedUrl, {
                     method: "PUT",
                     body: file,
-                    headers: {
-                        "Content-Type": file.type,
-                    },
+                    headers: { "Content-Type": file.type },
                 });
                 if (!uploadResponse.ok)
-                    throw new Error("Не удалось загрузить файл в хранилище.");
-
+                    throw new Error("Не удалось загрузить аватар.");
                 uploadedAvatarUrl = publicUrl;
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            } catch (error: any) {
-                setMessage(`Ошибка при загрузке аватара: ${error.message}`);
-                setIsLoading(false);
-                return;
             }
-        }
 
-        // Загрузка музыки
-        if (musicFile) {
-            try {
+            // 2. Если выбран новый трек, загружаем его
+            if (musicFile) {
                 const signResponse = await fetch(
                     "/api/users/sign-yandex-upload",
                     {
@@ -148,10 +134,7 @@ export default function ProfileSettingsPage() {
                     }
                 );
                 if (!signResponse.ok)
-                    throw new Error(
-                        "Не удалось получить ссылку для загрузки музыки."
-                    );
-
+                    throw new Error("Не удалось получить подпись для музыки.");
                 const { signedUrl, publicUrl } = await signResponse.json();
 
                 const uploadResponse = await fetch(signedUrl, {
@@ -160,19 +143,11 @@ export default function ProfileSettingsPage() {
                     headers: { "Content-Type": musicFile.type },
                 });
                 if (!uploadResponse.ok)
-                    throw new Error("Не удалось загрузить музыку в хранилище.");
-
+                    throw new Error("Не удалось загрузить музыку.");
                 uploadedMusicUrl = publicUrl;
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            } catch (error: any) {
-                setMessage(`Ошибка при загрузке музыки: ${error.message}`);
-                setIsLoading(false);
-                return;
             }
-        }
 
-        // 2. Сохраняем bio и новый URL аватара в нашей базе
-        try {
+            // 3. Сохраняем все данные в нашей базе
             const response = await fetch("/api/users/profile", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -180,25 +155,41 @@ export default function ProfileSettingsPage() {
                     avatarUrl: uploadedAvatarUrl,
                     bio,
                     links,
-                    profileMusicUrl: uploadedMusicUrl, // Отправляем ссылку
+                    profileMusicUrl: uploadedMusicUrl,
                     profileBannerColor: bannerColor,
                 }),
                 credentials: "include",
             });
-            if (!response.ok) throw new Error("Не удалось обновить профиль.");
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(
+                    errorData.message || "Не удалось обновить профиль."
+                );
+            }
+            return response.json();
+        })();
 
-            const updatedUser = await response.json();
-            dispatch(updateUserProfile(updatedUser));
-
-            setMessage("Профиль успешно обновлен!");
-            setFile(null);
-            if (fileInputRef.current) fileInputRef.current.value = "";
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (error: any) {
-            setMessage(`Ошибка при сохранении: ${error.message}`);
-        } finally {
-            setIsLoading(false);
-        }
+        toast
+            .promise(savePromise, {
+                loading: "Сохранение...",
+                success: (updatedUser) => {
+                    dispatch(updateUserProfile(updatedUser));
+                    setMessage("Профиль успешно обновлен!");
+                    setFile(null); // Сбрасываем файлы после успеха
+                    setMusicFile(null);
+                    if (fileInputRef.current) fileInputRef.current.value = "";
+                    if (musicFileInputRef.current)
+                        musicFileInputRef.current.value = "";
+                    return "Профиль успешно обновлен!";
+                },
+                error: (err) => {
+                    setMessage(`Ошибка: ${err.message}`);
+                    return `Ошибка: ${err.message}`;
+                },
+            })
+            .finally(() => {
+                setIsLoading(false);
+            });
     };
 
     const handleDeleteAccount = async () => {
