@@ -26,13 +26,34 @@ export default async function handler(
         const { bio, avatarUrl, links, profileMusicUrl, profileBannerColor } =
             req.body;
 
-        // Валидация
-        if (bio && typeof bio === "string" && bio.length > 210) {
-            return res.status(400).json({
-                message: "Описание не может быть длиннее 210 символов.",
-            });
+        // 1. Создаем пустой объект для данных, которые будем обновлять
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const dataToUpdate: any = {};
+
+        // 2. Проверяем КАЖДОЕ поле. Если оно пришло в запросе, добавляем его в dataToUpdate.
+        //    `undefined` означает "не трогать это поле".
+        if (bio !== undefined) {
+            if (bio.length > 210) {
+                return res.status(400).json({
+                    message: "Описание не может быть длиннее 210 символов.",
+                });
+            }
+            dataToUpdate.bio = bio;
         }
+        if (avatarUrl !== undefined) {
+            dataToUpdate.avatarUrl = avatarUrl;
+        }
+        if (profileMusicUrl !== undefined) {
+            dataToUpdate.profileMusicUrl =
+                profileMusicUrl === "" ? null : profileMusicUrl;
+        }
+        if (profileBannerColor !== undefined) {
+            dataToUpdate.profileBannerColor =
+                profileBannerColor === "" ? null : profileBannerColor;
+        }
+
         if (links) {
+            // Валидация
             for (const url of Object.values(links)) {
                 if (
                     url &&
@@ -40,35 +61,24 @@ export default async function handler(
                         (!url.startsWith("https://") &&
                             !url.startsWith("http://")))
                 ) {
-                    // Разрешаем и http для гибкости
+                    // Можно вернуть ошибку, но пока пропустим
                 }
             }
+            // Добавляем все поля из links в dataToUpdate
+            dataToUpdate.linkTelegram = links.telegram || null;
+            dataToUpdate.linkInstagram = links.instagram || null;
+            dataToUpdate.linkYouTube = links.youTube || null;
+            dataToUpdate.linkTikTok = links.tikTok || null;
+            dataToUpdate.linkCustomName = links.customName || null;
+            dataToUpdate.linkCustomUrl = links.customUrl || null;
         }
 
+        // 3. Выполняем обновление только с теми данными, которые реально пришли
         const updatedUser = await prisma.user.update({
             where: { id: userId },
-            data: {
-                bio: bio,
-                avatarUrl: avatarUrl,
-                // Сохраняем ссылки
-                linkTelegram: links?.telegram || null,
-                linkInstagram: links?.instagram || null,
-                linkYouTube: links?.youTube || null,
-                linkTikTok: links?.tikTok || null,
-                linkCustomName: links?.customName || null,
-                linkCustomUrl: links?.customUrl || null,
-
-                // Сохраняем ссылку на музыку
-                // Если пришла пустая строка, сохраняем null
-                profileMusicUrl:
-                    profileMusicUrl === "" ? null : profileMusicUrl,
-
-                // Сохраняем кастомный баннер
-                profileBannerColor,
-            },
+            data: dataToUpdate,
         });
 
-        // Не отправляем хеш пароля обратно
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { passwordHash, ...userWithoutPassword } = updatedUser;
 
