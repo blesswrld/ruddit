@@ -163,16 +163,10 @@ export const Header = () => {
                 <div className="flex items-center gap-6">
                     {/* Логотип */}
                     <Link
-                        href=""
+                        href="/"
                         className="text-xl font-bold text-gray-800 hover:text-blue-600"
                     >
                         Ruddit
-                    </Link>
-                    <Link
-                        href="/"
-                        className="text-sm font-semibold text-gray-600 hover:text-gray-900"
-                    >
-                        Лента
                     </Link>
                     <Link
                         href="/communities"
