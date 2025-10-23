@@ -9,6 +9,9 @@ import { Input } from "@/components/common/Input";
 
 const prisma = new PrismaClient();
 
+const NAME_MAX_LENGTH = 30;
+const DESC_MAX_LENGTH = 200;
+
 interface JwtPayload {
     userId: string;
 }
@@ -230,7 +233,8 @@ export default function CommunitySettingsPage({
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         disabled={isLoading}
-                        maxLength={30}
+                        minLength={3}
+                        maxLength={NAME_MAX_LENGTH}
                     />
                 </div>
 
@@ -246,9 +250,19 @@ export default function CommunitySettingsPage({
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
                         rows={5}
+                        maxLength={DESC_MAX_LENGTH}
                         className="w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:outline-none focus:ring-0"
                         disabled={isLoading}
                     />
+                    <p
+                        className={`mt-1 text-right text-xs ${
+                            description.length >= 200
+                                ? "text-red-500"
+                                : "text-gray-500"
+                        }`}
+                    >
+                        {description.length} / 200
+                    </p>
                 </div>
 
                 {message && <p className="text-sm text-green-600">{message}</p>}
@@ -256,8 +270,13 @@ export default function CommunitySettingsPage({
                 <div className="flex justify-end">
                     <Button
                         type="submit"
-                        disabled={isLoading}
-                        className="w-auto border-none outline-none"
+                        disabled={
+                            isLoading ||
+                            name.trim().length < 3 ||
+                            name.length > 30 ||
+                            description.length > 200
+                        }
+                        className="w-auto"
                     >
                         {isLoading ? "Сохранение..." : "Сохранить"}
                     </Button>

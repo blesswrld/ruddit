@@ -3,6 +3,9 @@ import { Input } from "@/components/common/Input";
 import { useRouter } from "next/router";
 import { useState } from "react";
 
+const NAME_MAX_LENGTH = 30;
+const DESC_MAX_LENGTH = 200;
+
 export default function CreateCommunityPage() {
     const router = useRouter();
     const [name, setName] = useState("");
@@ -49,6 +52,8 @@ export default function CreateCommunityPage() {
                     onChange={(e) => setName(e.target.value)}
                     disabled={isLoading}
                     required
+                    minLength={3}
+                    maxLength={NAME_MAX_LENGTH}
                 />
                 <div>
                     <label
@@ -63,16 +68,30 @@ export default function CreateCommunityPage() {
                         onChange={(e) => setDescription(e.target.value)}
                         disabled={isLoading}
                         rows={4}
+                        maxLength={DESC_MAX_LENGTH}
                         className="w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:outline-none focus:ring-0"
                     />
+                    <p
+                        className={`mt-1 text-right text-xs ${
+                            description.length >= 200
+                                ? "text-red-500"
+                                : "text-gray-500"
+                        }`}
+                    >
+                        {description.length} / 200
+                    </p>
                 </div>
 
                 {error && <p className="text-sm text-red-500">{error}</p>}
 
                 <Button
                     type="submit"
-                    disabled={isLoading}
-                    className="border-none outline-none"
+                    disabled={
+                        isLoading ||
+                        name.trim().length < 3 ||
+                        name.length > 30 ||
+                        description.length > 200
+                    }
                 >
                     {isLoading ? "Создание..." : "Создать сообщество"}
                 </Button>

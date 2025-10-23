@@ -10,13 +10,56 @@ interface JwtPayload {
 
 // Вспомогательная функция для создания слага
 const slugify = (text: string) => {
-    return text
+    const translitMap: { [key: string]: string } = {
+        а: "a",
+        б: "b",
+        в: "v",
+        г: "g",
+        д: "d",
+        е: "e",
+        ё: "yo",
+        ж: "zh",
+        з: "z",
+        и: "i",
+        й: "y",
+        к: "k",
+        л: "l",
+        м: "m",
+        н: "n",
+        о: "o",
+        п: "p",
+        р: "r",
+        с: "s",
+        т: "t",
+        у: "u",
+        ф: "f",
+        х: "h",
+        ц: "c",
+        ч: "ch",
+        ш: "sh",
+        щ: "shch",
+        ъ: "",
+        ы: "y",
+        ь: "",
+        э: "e",
+        ю: "yu",
+        я: "ya",
+    };
+
+    // СНАЧАЛА ТРАНСЛИТЕРИРУЕМ
+    const transliterated = text
         .toString()
         .toLowerCase()
         .trim()
-        .replace(/\s+/g, "-") // Заменяем пробелы на -
-        .replace(/[^\w\-]+/g, "") // Удаляем все не-буквенно-цифровые символы
-        .replace(/\-\-+/g, "-"); // Заменяем несколько -- на один -
+        .split("")
+        .map((char) => translitMap[char] || char)
+        .join("");
+
+    // ПОТОМ ЧИСТИМ
+    return transliterated
+        .replace(/[^\w\s-]/g, "") // Удаляем оставшиеся спецсимволы
+        .replace(/[\s_-]+/g, "-") // Заменяем пробелы и подчеркивания на дефис
+        .replace(/^-+|-+$/g, ""); // Убираем дефисы в начале и конце
 };
 
 export default async function handler(
@@ -51,10 +94,16 @@ export default async function handler(
 
         // 2. Получаем и валидируем данные
         const { name, description } = req.body;
-        if (!name || name.trim().length < 3) {
-            return res
-                .status(400)
-                .json({ message: "Название должно быть длиннее 3 символов" });
+        if (!name || name.trim().length < 3 || name.length > 30) {
+            return res.status(400).json({
+                message: "Название должно содержать от 3 до 30 символов.",
+            });
+        }
+
+        if (description && description.length > 200) {
+            return res.status(400).json({
+                message: "Описание не может быть длиннее 200 символов.",
+            });
         }
 
         // Генерируем слаг
