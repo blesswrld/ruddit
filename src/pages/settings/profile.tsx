@@ -231,7 +231,8 @@ export default function ProfileSettingsPage() {
             const response = await fetch("/api/users/profile", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ profileMusicUrl: null }), // Отправляем null для удаления
+                // Отправляем пустую строку
+                body: JSON.stringify({ profileMusicUrl: "" }),
                 credentials: "include",
             });
             if (!response.ok) throw new Error("Не удалось удалить трек.");
@@ -239,10 +240,7 @@ export default function ProfileSettingsPage() {
             const updatedUser = await response.json();
             dispatch(updateUserProfile(updatedUser));
 
-            // Сразу обновляем локальное состояние
-            setCurrentMusicUrl(null);
-            setMusicFile(null);
-            if (musicFileInputRef.current) musicFileInputRef.current.value = "";
+            router.reload();
 
             toast.success("Трек успешно удален.");
             // eslint-disable-next-line @typescript-eslint/no-explicit-any

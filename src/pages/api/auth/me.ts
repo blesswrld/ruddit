@@ -44,6 +44,8 @@ export default async function handler(
                 linkTikTok: true,
                 linkCustomName: true,
                 linkCustomUrl: true,
+                profileMusicUrl: true,
+                profileBannerColor: true,
             },
         });
 

@@ -44,6 +44,8 @@ export default async function handler(
             dataToUpdate.avatarUrl = avatarUrl;
         }
         if (profileMusicUrl !== undefined) {
+            // Если пришла пустая строка "", то в базу запишется null.
+            // Если пришел URL, запишется URL.
             dataToUpdate.profileMusicUrl =
                 profileMusicUrl === "" ? null : profileMusicUrl;
         }

@@ -60,12 +60,9 @@ export default async function handler(
         );
 
         // 5. Отправляем успешный ответ
-        return res.status(200).json({
-            id: user.id,
-            username: user.username,
-            email: user.email,
-            avatarUrl: user.avatarUrl,
-        });
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { passwordHash, ...userToReturn } = user;
+        return res.status(200).json(userToReturn);
     } catch (error) {
         console.error("Login error:", error);
         return res.status(500).json({ message: "Internal Server Error" });
