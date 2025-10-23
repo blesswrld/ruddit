@@ -3,7 +3,7 @@ import { PostCard } from "@/components/posts/PostCard";
 import { CustomAudioPlayer } from "@/components/common/CustomAudioPlayer";
 import { PrismaClient } from "@prisma/client";
 import type { GetServerSideProps, InferGetServerSidePropsType } from "next";
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { ShareButton } from "@/components/common/ShareButton";
 import { useAppSelector } from "@/store/hooks";
@@ -24,32 +24,21 @@ const prisma = new PrismaClient();
 
 const BANNER_COLORS = [
     "#3B82F6",
-    "#10B981",
-    "#F59E0B",
-    "#EF4444",
-    "#8B5CF6",
-    "#EC4899",
-    "#0a0a0a",
     "#6366F1",
+    "#10B981",
     "#14B8A6",
+    "#F59E0B",
     "#F97316",
+    "#EF4444",
     "#DC2626",
+    "#8B5CF6",
     "#7C3AED",
+    "#EC4899",
     "#D946EF",
+    "#6366F1",
     "#18181b",
+    "#0a0a0a",
 ];
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function debounce<T extends (...args: any[]) => any>(
-    func: T,
-    wait: number
-): (...args: Parameters<T>) => void {
-    let timeout: NodeJS.Timeout;
-    return function (...args: Parameters<T>) {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func(...args), wait);
-    };
-}
 
 export const getServerSideProps = (async (context) => {
     const { username } = context.params!;
@@ -121,19 +110,25 @@ export default function UserProfilePage({
         initialUser.profileBannerColor || ""
     );
     const [isPickerVisible, setIsPickerVisible] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    const debouncedSave = useCallback(
-        debounce((newColor: string) => {
-            toast.promise(
+    const handleColorChange = (newColor: string) => {
+        setBannerColor(newColor); // Оптимистичное обновление
+    };
+
+    const handleSaveColor = () => {
+        setIsLoading(true);
+        toast
+            .promise(
                 fetch("/api/users/profile", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ profileBannerColor: newColor }),
+                    body: JSON.stringify({ profileBannerColor: bannerColor }),
                     credentials: "include",
-                }).then((res) => {
+                }).then(async (res) => {
                     if (!res.ok) throw new Error("Не удалось сохранить цвет.");
-                    return res.json();
+                    const updatedUser = await res.json();
+                    return updatedUser;
                 }),
                 {
                     loading: "Сохранение...",
@@ -144,18 +139,20 @@ export default function UserProfilePage({
                                     updatedUser.profileBannerColor,
                             })
                         );
+                        setIsPickerVisible(false);
                         return "Цвет профиля сохранен!";
                     },
                     error: (err) => err.message,
                 }
-            );
-        }, 1000),
-        [dispatch]
-    );
+            )
+            .finally(() => {
+                setIsLoading(false);
+            });
+    };
 
-    const handleColorChange = (newColor: string) => {
-        setBannerColor(newColor);
-        debouncedSave(newColor);
+    const handleCancelColor = () => {
+        setBannerColor(initialUser.profileBannerColor || "");
+        setIsPickerVisible(false);
     };
 
     const registrationDate = new Date(initialUser.createdAt).toLocaleDateString(
@@ -187,13 +184,14 @@ export default function UserProfilePage({
                                         ? "bg-black/20 text-white hover:bg-black/30"
                                         : "bg-gray-100 hover:bg-gray-200"
                                 }`}
+                                disabled={isLoading}
                             >
                                 <Palette size={16} />
                             </button>
                             {isPickerVisible && (
                                 <div className="absolute w-72 top-full right-0 mt-2 rounded-lg bg-white p-3 shadow-lg z-10">
                                     {/* Сетка с цветами */}
-                                    <div className="grid grid-cols-7 gap-2">
+                                    <div className="grid grid-cols-6 gap-2">
                                         {BANNER_COLORS.map((color) => (
                                             <button
                                                 key={color}
@@ -213,13 +211,31 @@ export default function UserProfilePage({
                                     </div>
 
                                     {/* Кнопка "Сбросить" */}
-                                    <button
-                                        onClick={() => handleColorChange("")} // Передаем пустую строку для сброса
-                                        className="mt-3 w-full flex items-center justify-center gap-2 rounded-md bg-gray-100 px-2 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-200"
-                                    >
-                                        <X size={14} />
-                                        Сбросить цвет
-                                    </button>
+                                    <div className="mt-4 flex justify-between items-center border-t pt-3">
+                                        <button
+                                            onClick={() =>
+                                                handleColorChange("")
+                                            } // Передаем пустую строку для сброса
+                                            className="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-100"
+                                        >
+                                            <X size={14} />
+                                            Сбросить
+                                        </button>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={handleCancelColor}
+                                                className="text-xs font-semibold text-gray-700 hover:text-black"
+                                            >
+                                                Отмена
+                                            </button>
+                                            <button
+                                                onClick={handleSaveColor}
+                                                className="rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-700"
+                                            >
+                                                Сохранить
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -315,7 +331,7 @@ export default function UserProfilePage({
                                     className="flex items-center gap-1 text-sm font-semibold text-blue-600 hover:underline"
                                 >
                                     <LinkIcon size={16} />{" "}
-                                    {initialUser.linkCustomName}
+                                    {initialUser.linkCustomName}{" "}
                                 </a>
                             )}
                     </div>
