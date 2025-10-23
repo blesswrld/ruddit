@@ -174,6 +174,12 @@ export const Header = () => {
                     >
                         Сообщества
                     </Link>
+                    <Link
+                        href="/videos"
+                        className="text-sm font-semibold text-gray-600 hover:text-gray-900"
+                    >
+                        Видео
+                    </Link>
                 </div>
                 {/* Поиск */}
                 <div className="flex-grow max-w-md">

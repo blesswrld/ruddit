@@ -82,6 +82,8 @@ model Post {
   notifications Notification[]
 
   images Image[]
+
+  videoUrl  String?
 }
 
 model Image {

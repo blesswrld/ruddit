@@ -24,7 +24,7 @@ export default async function handler(
     try {
         const { userId } = verify(token, process.env.JWT_SECRET!) as JwtPayload;
         // 1. Получаем imageUrls из body
-        const { title, content, communityId, imageUrls } = req.body;
+        const { title, content, communityId, imageUrls, videoUrl } = req.body;
 
         // Валидация
         if (!title || title.trim().length === 0) {
@@ -51,6 +51,13 @@ export default async function handler(
             return res
                 .status(400)
                 .json({ message: "Можно загрузить не более 5 изображений." });
+        }
+
+        // Валидация: либо картинки, либо видео, либо текст. Не все сразу.
+        if (imageUrls && imageUrls.length > 0 && videoUrl) {
+            return res.status(400).json({
+                message: "Нельзя одновременно добавлять видео и изображения.",
+            });
         }
 
         // Проверка на подписку или авторство
@@ -80,6 +87,7 @@ export default async function handler(
                     content,
                     authorId: userId,
                     communityId: communityId,
+                    videoUrl,
                     // 3. Создаем связанные изображения
                     images: {
                         createMany: {

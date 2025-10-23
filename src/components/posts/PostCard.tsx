@@ -26,6 +26,7 @@ export type PostForCard = {
     // Добавляем голоса
     votes: {
         userId: string;
+        // Добавляем поле для сообщества
         type: "UP" | "DOWN";
     }[];
 
@@ -33,7 +34,7 @@ export type PostForCard = {
     community: {
         slug: string;
     };
-    // Добавляем массив изображений
+    videoUrl: string | null;
     images: {
         id: string;
         url: string;
@@ -394,93 +395,112 @@ export const PostCard = ({ post }: PostCardProps) => {
                             </p>
                         </div>
 
-                        {/* Редактор изображений */}
-                        <div>
-                            <label className="mb-1 block text-sm font-medium text-gray-700">
-                                Изображения
-                            </label>
-                            <div className="mt-2 grid grid-cols-3 sm:grid-cols-5 gap-4">
-                                {imageUrls.map((url) => (
-                                    <div
-                                        key={url}
-                                        className="relative aspect-square"
-                                    >
-                                        {/* eslint-disable-next-line
-                                        @next/next/no-img-element */}
-                                        <img
-                                            src={url}
-                                            alt="Existing image"
-                                            className="h-full w-full object-cover rounded-md"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                removeExistingImage(url)
-                                            }
-                                            className="absolute -top-2 -right-2 rounded-full bg-red-500 p-1 text-white shadow-md hover:bg-red-600"
-                                        >
-                                            <X size={14} />
-                                        </button>
-                                    </div>
-                                ))}
-                                {filesToUpload.map((file, index) => (
-                                    <div
-                                        key={file.name + index}
-                                        className="relative aspect-square"
-                                    >
-                                        {/* eslint-disable-next-line
-                                        @next/next/no-img-element */}
-                                        <img
-                                            src={URL.createObjectURL(file)}
-                                            alt="New preview"
-                                            className="h-full w-full object-cover rounded-md"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => removeNewFile(index)}
-                                            className="absolute -top-2 -right-2 rounded-full bg-red-500 p-1 text-white shadow-md hover:bg-red-600"
-                                        >
-                                            <X size={14} />
-                                        </button>
-                                    </div>
-                                ))}
-                                {imageUrls.length + filesToUpload.length <
-                                    MAX_FILES && (
-                                    <label
-                                        htmlFor={`image-edit-upload-${post.id}`}
-                                        className={`flex cursor-pointer flex-col items-center justify-center rounded-md border-2 border-dashed border-gray-300 ${
-                                            isLoading
-                                                ? "bg-gray-200 cursor-not-allowed"
-                                                : "bg-gray-50 hover:bg-gray-100"
-                                        } text-gray-400 aspect-square`}
-                                    >
-                                        <ImagePlus size={32} />
-                                        <input
-                                            id={`image-edit-upload-${post.id}`}
-                                            type="file"
-                                            multiple
-                                            accept="image/*"
-                                            className="sr-only"
-                                            ref={imageInputRef} // Привязываем реф
-                                            onClick={(e) => {
-                                                (
-                                                    e.target as HTMLInputElement
-                                                ).value = "";
-                                            }} // Сбрасываем значение
-                                            onChange={handleFileChange}
-                                            disabled={isLoading}
-                                        />
-                                    </label>
-                                )}
+                        {/* Условный рендер: либо видео, либо редактор изображений */}
+                        {post.videoUrl ? (
+                            <div>
+                                <label className="mb-1 block text-sm font-medium text-gray-700">
+                                    Видео
+                                </label>
+                                <div className="mt-2 rounded-md overflow-hidden bg-black flex justify-center">
+                                    <video
+                                        src={post.videoUrl}
+                                        controls
+                                        className="max-h-[512px] w-full"
+                                    />
+                                </div>
+                                <p className="mt-2 text-xs text-gray-500">
+                                    Редактирование или замена видео не
+                                    поддерживается.
+                                </p>
                             </div>
-
-                            {/* Подсказка */}
-                            <p className="mt-2 text-xs text-gray-500">
-                                Совет: для лучшего отображения используйте
-                                горизонтальные изображения (16:9) или квадратные
-                                (1:1).
-                            </p>
-                        </div>
+                        ) : (
+                            <div>
+                                <label className="mb-1 block text-sm font-medium text-gray-700">
+                                    Изображения
+                                </label>
+                                <div className="mt-2 grid grid-cols-3 sm:grid-cols-5 gap-4">
+                                    {imageUrls.map((url) => (
+                                        <div
+                                            key={url}
+                                            className="relative aspect-square"
+                                        >
+                                            {/* eslint-disable-next-line
+                                            @next/next/no-img-element */}
+                                            <img
+                                                src={url}
+                                                alt="Existing image"
+                                                className="h-full w-full object-cover rounded-md"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    removeExistingImage(url)
+                                                }
+                                                className="absolute -top-2 -right-2 rounded-full bg-red-500 p-1 text-white shadow-md hover:bg-red-600"
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                    {filesToUpload.map((file, index) => (
+                                        <div
+                                            key={file.name + index}
+                                            className="relative aspect-square"
+                                        >
+                                            {/* eslint-disable-next-line
+                                            @next/next/no-img-element */}
+                                            <img
+                                                src={URL.createObjectURL(file)}
+                                                alt="New preview"
+                                                className="h-full w-full object-cover rounded-md"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    removeNewFile(index)
+                                                }
+                                                className="absolute -top-2 -right-2 rounded-full bg-red-500 p-1 text-white shadow-md hover:bg-red-600"
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                    {imageUrls.length + filesToUpload.length <
+                                        MAX_FILES && (
+                                        <label
+                                            htmlFor={`image-edit-upload-${post.id}`}
+                                            className={`flex cursor-pointer flex-col items-center justify-center rounded-md border-2 border-dashed border-gray-300 ${
+                                                isLoading
+                                                    ? "bg-gray-200 cursor-not-allowed"
+                                                    : "bg-gray-50 hover:bg-gray-100"
+                                            } text-gray-400 aspect-square`}
+                                        >
+                                            <ImagePlus size={32} />
+                                            <input
+                                                id={`image-edit-upload-${post.id}`}
+                                                type="file"
+                                                multiple
+                                                accept="image/*"
+                                                className="sr-only"
+                                                ref={imageInputRef}
+                                                onClick={(e) => {
+                                                    (
+                                                        e.target as HTMLInputElement
+                                                    ).value = "";
+                                                }}
+                                                onChange={handleFileChange}
+                                                disabled={isLoading}
+                                            />
+                                        </label>
+                                    )}
+                                </div>
+                                <p className="mt-2 text-xs text-gray-500">
+                                    Совет: для лучшего отображения используйте
+                                    горизонтальные изображения (16:9) или
+                                    квадратные (1:1).
+                                </p>
+                            </div>
+                        )}
 
                         <div className="mt-2 flex gap-2">
                             <button
@@ -513,9 +533,21 @@ export const PostCard = ({ post }: PostCardProps) => {
                                 {post.title}
                             </h2>
                         </Link>
-                        <ImageGallery images={post.images} />
+
+                        {post.videoUrl ? (
+                            <div className="mt-2 rounded-md overflow-hidden bg-black flex justify-center">
+                                <video
+                                    src={post.videoUrl}
+                                    controls
+                                    className="max-h-[512px]"
+                                />
+                            </div>
+                        ) : (
+                            <ImageGallery images={post.images} />
+                        )}
+
                         {post.content && (
-                            <p className="text-gray-700 break-all whitespace-pre-wrap">
+                            <p className="text-gray-700 break-all whitespace-pre-wrap mt-2">
                                 {post.content}
                             </p>
                         )}
