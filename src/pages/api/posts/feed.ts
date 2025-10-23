@@ -75,16 +75,20 @@ export default async function handler(
             });
         } else if (feedType === "hot") {
             // Блок для "Горячего"
-            const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+            const thirtyDaysAgo = new Date(
+                Date.now() - 30 * 24 * 60 * 60 * 1000
+            );
 
-            // 1. Получаем все посты за последнюю неделю с их голосами
-            const allPosts = await prisma.post.findMany({
-                where: { createdAt: { gte: sevenDaysAgo } },
+            // 1. Получаем до 500 постов за последний месяц, отсортированных по новизне (чтобы не обрабатывать совсем старые)
+            const recentPosts = await prisma.post.findMany({
+                where: { createdAt: { gte: thirtyDaysAgo } },
+                orderBy: { createdAt: "desc" },
+                take: 500,
                 include: { votes: true },
             });
 
             // 2. Считаем рейтинг и "очки горячего" для каждого поста
-            const scoredPosts = allPosts.map((post) => {
+            const scoredPosts = recentPosts.map((post) => {
                 const score = post.votes.reduce((acc, vote) => {
                     return acc + (vote.type === "UP" ? 1 : -1);
                 }, 0);
@@ -93,7 +97,7 @@ export default async function handler(
                     (Date.now() - new Date(post.createdAt).getTime()) /
                     (1000 * 60 * 60);
                 // Простая формула: Рейтинг / (Возраст в часах + 2)^1.8
-                const hotScore = (score - 1) / Math.pow(hoursAgo + 2, 1.8);
+                const hotScore = score / Math.pow(hoursAgo + 2, 1.8);
 
                 return { ...post, hotScore };
             });

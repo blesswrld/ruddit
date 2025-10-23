@@ -115,6 +115,14 @@ export const Header = () => {
                                     >
                                         Настройки
                                     </Link>
+                                    <div className="border-t my-1"></div>{" "}
+                                    <Link
+                                        href="/faq"
+                                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                    >
+                                        Помощь (FAQ)
+                                    </Link>
+                                    <div className="border-t my-1"></div>{" "}
                                     <button
                                         onClick={handleLogout}
                                         className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
@@ -155,12 +163,17 @@ export const Header = () => {
                 <div className="flex items-center gap-6">
                     {/* Логотип */}
                     <Link
-                        href="/"
+                        href=""
                         className="text-xl font-bold text-gray-800 hover:text-blue-600"
                     >
                         Ruddit
                     </Link>
-                    {/* Ссылка на сообщества */}
+                    <Link
+                        href="/"
+                        className="text-sm font-semibold text-gray-600 hover:text-gray-900"
+                    >
+                        Лента
+                    </Link>
                     <Link
                         href="/communities"
                         className="text-sm font-semibold text-gray-600 hover:text-gray-900"
