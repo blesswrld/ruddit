@@ -9,10 +9,10 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(cuid()) // Уникальный ID
-  username     String   @unique // Имя пользователя, должно быть уникальным
-  email        String   @unique // Email, тоже уникальный
-  passwordHash String   // Здесь будет храниться ЗАХЕШИРОВАННЫЙ пароль
+  id                 String   @id @default(cuid()) // Уникальный ID
+  username           String   @unique // Имя пользователя, должно быть уникальным
+  email              String   @unique // Email, тоже уникальный
+  passwordHash       String   // Здесь будет храниться ЗАХЕШИРОВАННЫЙ пароль
   avatarUrl          String?  // Аватар (необязательно)
   bio                String?  // Описание профиля (необязательно)
 
@@ -22,26 +22,25 @@ model User {
   linkTikTok         String?
   linkCustomName     String? // Имя для кастомной ссылки
   linkCustomUrl      String? // URL для кастомной ссылки
-  
+
   profileMusicUrl    String?
-  profileBannerColor   String?
+  profileBannerColor String?
 
-  createdAt    DateTime @default(now()) // Дата создания
-  updatedAt    DateTime @updatedAt // Дата обновления
+  createdAt          DateTime @default(now()) // Дата создания
+  updatedAt          DateTime @updatedAt // Дата обновления
 
-  // Связь с созданными сообществами
+  // Связи
   createdCommunities Community[] @relation("CreatedCommunities")
-
-  posts Post[] 
-
-  votes Vote[]
-
-  comments Comment[]
-
-  subscriptions Subscription[]
-
-  notifications     Notification[] @relation("Notifications")
-  sentNotifications Notification[] @relation("SentNotifications")
+  posts              Post[]
+  votes              Vote[]
+  comments           Comment[]
+  subscriptions      Subscription[]
+  notifications      Notification[] @relation("Notifications")
+  sentNotifications  Notification[] @relation("SentNotifications")
+  
+  // Связи для чата
+  conversations      Conversation[] @relation("ConversationParticipants")
+  sentMessages       Message[]
 }
 
 model Community {
@@ -166,4 +165,30 @@ model Notification {
   post      Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
   commentId String?  // Комментарий, на который ответили
   comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+}
+
+model Conversation {
+  id            String    @id @default(cuid())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Участники беседы (многие-ко-многим с User)
+  participants  User[]    @relation("ConversationParticipants")
+
+  // Сообщения в этой беседе
+  messages      Message[]
+}
+
+model Message {
+  id             String      @id @default(cuid())
+  text           String
+  createdAt      DateTime    @default(now())
+
+  // Автор сообщения
+  authorId       String
+  author         User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  // Беседа, к которой относится сообщение
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 }

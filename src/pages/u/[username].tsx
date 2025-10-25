@@ -18,7 +18,9 @@ import {
     Music2,
     Palette,
     X,
+    MessageSquare,
 } from "lucide-react";
+import { useRouter } from "next/router";
 
 const prisma = new PrismaClient();
 
@@ -97,17 +99,18 @@ export const getServerSideProps = (async (context) => {
 }) satisfies GetServerSideProps;
 
 export default function UserProfilePage({
-    user: initialUser,
+    user: profileUser,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) {
     const dispatch = useDispatch();
+    const router = useRouter(); // 2. Инициализируем роутер
     const { user: currentUser } = useAppSelector((state) => state.auth);
-    const isOwnProfile = currentUser?.username === initialUser.username;
+    const isOwnProfile = currentUser?.username === profileUser.username;
 
     const [activeTab, setActiveTab] = useState<
         "posts" | "comments" | "communities"
     >("posts");
     const [bannerColor, setBannerColor] = useState(
-        initialUser.profileBannerColor || ""
+        profileUser.profileBannerColor || ""
     );
     const [isPickerVisible, setIsPickerVisible] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -151,11 +154,16 @@ export default function UserProfilePage({
     };
 
     const handleCancelColor = () => {
-        setBannerColor(initialUser.profileBannerColor || "");
+        setBannerColor(profileUser.profileBannerColor || "");
         setIsPickerVisible(false);
     };
 
-    const registrationDate = new Date(initialUser.createdAt).toLocaleDateString(
+    const handleStartChat = () => {
+        // Просто переходим на страницу чата, передавая ID собеседника
+        router.push(`/chat?recipientId=${profileUser.id}`);
+    };
+
+    const registrationDate = new Date(profileUser.createdAt).toLocaleDateString(
         "ru-RU",
         {
             month: "long",
@@ -172,6 +180,20 @@ export default function UserProfilePage({
             >
                 {/* Кнопки "Поделиться" и "Изменить цвет" */}
                 <div className="absolute top-4 right-4 flex items-center gap-2">
+                    {!isOwnProfile && currentUser && (
+                        <button
+                            onClick={handleStartChat}
+                            title="Написать сообщение"
+                            className={`rounded-full p-2 ${
+                                bannerColor
+                                    ? "bg-black/20 text-white hover:bg-black/30"
+                                    : "bg-gray-100 hover:bg-gray-200"
+                            }`}
+                        >
+                            <MessageSquare size={16} />
+                        </button>
+                    )}
+
                     {isOwnProfile && (
                         <div className="relative">
                             <button
@@ -246,8 +268,8 @@ export default function UserProfilePage({
                 {/* Аватар */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                    src={initialUser.avatarUrl || "/default-avatar.png"}
-                    alt={`${initialUser.username}'s avatar`}
+                    src={profileUser.avatarUrl || "/default-avatar.png"}
+                    alt={`${profileUser.username}'s avatar`}
                     className="h-24 w-24 rounded-full border-2 border-gray-200 object-cover"
                 />
                 <div>
@@ -256,7 +278,7 @@ export default function UserProfilePage({
                             bannerColor ? "text-white" : "text-gray-800"
                         }`}
                     >
-                        {initialUser.username}
+                        {profileUser.username}
                     </h1>
                     <p
                         className={`mt-1 text-sm ${
@@ -267,20 +289,20 @@ export default function UserProfilePage({
                     </p>
 
                     {/* Описание */}
-                    {initialUser.bio && (
+                    {profileUser.bio && (
                         <p
                             className={`mt-4 ${
                                 bannerColor ? "text-white" : "text-gray-700"
                             }`}
                         >
-                            {initialUser.bio}
+                            {profileUser.bio}
                         </p>
                     )}
 
                     <div className="mt-6 flex items-center gap-4 border-t pt-4">
-                        {initialUser.linkTelegram && (
+                        {profileUser.linkTelegram && (
                             <a
-                                href={initialUser.linkTelegram}
+                                href={profileUser.linkTelegram}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-gray-500 hover:text-blue-500"
@@ -289,9 +311,9 @@ export default function UserProfilePage({
                                 <Send className="w-auto h-5" />
                             </a>
                         )}
-                        {initialUser.linkInstagram && (
+                        {profileUser.linkInstagram && (
                             <a
-                                href={initialUser.linkInstagram}
+                                href={profileUser.linkInstagram}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-gray-500 hover:text-pink-500"
@@ -300,9 +322,9 @@ export default function UserProfilePage({
                                 <Instagram className="w-auto h-5" />
                             </a>
                         )}
-                        {initialUser.linkYouTube && (
+                        {profileUser.linkYouTube && (
                             <a
-                                href={initialUser.linkYouTube}
+                                href={profileUser.linkYouTube}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-gray-500 hover:text-red-600"
@@ -311,9 +333,9 @@ export default function UserProfilePage({
                                 <Youtube className="w-auto h-5" />
                             </a>
                         )}
-                        {initialUser.linkTikTok && (
+                        {profileUser.linkTikTok && (
                             <a
-                                href={initialUser.linkTikTok}
+                                href={profileUser.linkTikTok}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-gray-500 hover:text-black"
@@ -322,29 +344,29 @@ export default function UserProfilePage({
                                 <Music2 className="w-auto h-5" />
                             </a>
                         )}
-                        {initialUser.linkCustomUrl &&
-                            initialUser.linkCustomName && (
+                        {profileUser.linkCustomUrl &&
+                            profileUser.linkCustomName && (
                                 <a
-                                    href={initialUser.linkCustomUrl}
+                                    href={profileUser.linkCustomUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="flex items-center gap-1 text-sm font-semibold text-blue-600 hover:underline"
                                 >
                                     <LinkIcon size={16} />{" "}
-                                    {initialUser.linkCustomName}{" "}
+                                    {profileUser.linkCustomName}{" "}
                                 </a>
                             )}
                     </div>
 
                     {/* Аудиоплеер */}
-                    {initialUser.profileMusicUrl && (
+                    {profileUser.profileMusicUrl && (
                         <div className="mt-6 border-t pt-4 break-all">
                             {/* Передаем название трека в плеер */}
                             <CustomAudioPlayer
-                                src={initialUser.profileMusicUrl}
+                                src={profileUser.profileMusicUrl}
                                 trackName={(() => {
                                     const fullName =
-                                        initialUser.profileMusicUrl
+                                        profileUser.profileMusicUrl
                                             .split("/")
                                             .pop()
                                             ?.split("-")
@@ -374,7 +396,7 @@ export default function UserProfilePage({
                                 : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
                         }`}
                     >
-                        Посты ({initialUser.posts.length})
+                        Посты ({profileUser.posts.length})
                     </button>
                     <button
                         onClick={() => setActiveTab("comments")}
@@ -384,7 +406,7 @@ export default function UserProfilePage({
                                 : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
                         }`}
                     >
-                        Комментарии ({initialUser.comments.length})
+                        Комментарии ({profileUser.comments.length})
                     </button>
                     <button
                         onClick={() => setActiveTab("communities")}
@@ -395,7 +417,7 @@ export default function UserProfilePage({
                         }`}
                     >
                         Созданные сообщества (
-                        {initialUser.createdCommunities.length})
+                        {profileUser.createdCommunities.length})
                     </button>
                 </nav>
             </div>
@@ -404,9 +426,9 @@ export default function UserProfilePage({
             <div className="mt-4 flex flex-col gap-4">
                 {activeTab === "posts" && (
                     <>
-                        {initialUser.posts.length > 0 ? (
+                        {profileUser.posts.length > 0 ? (
                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            initialUser.posts.map((post: any) => (
+                            profileUser.posts.map((post: any) => (
                                 <PostCard key={post.id} post={post} />
                             ))
                         ) : (
@@ -421,9 +443,9 @@ export default function UserProfilePage({
                 )}
                 {activeTab === "comments" && (
                     <>
-                        {initialUser.comments.length > 0 ? (
+                        {profileUser.comments.length > 0 ? (
                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                            initialUser.comments.map((comment: any) => (
+                            profileUser.comments.map((comment: any) => (
                                 <CommentCard
                                     key={comment.id}
                                     comment={comment}
@@ -441,8 +463,8 @@ export default function UserProfilePage({
                 )}
                 {activeTab === "communities" && (
                     <>
-                        {initialUser.createdCommunities.length > 0 ? (
-                            initialUser.createdCommunities.map(
+                        {profileUser.createdCommunities.length > 0 ? (
+                            profileUser.createdCommunities.map(
                                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                 (community: any) => (
                                     <Link

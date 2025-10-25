@@ -7,7 +7,7 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { SearchInput } from "../components/common/SearchInput";
-import { Plus } from "lucide-react";
+import { MessageSquare, Plus } from "lucide-react";
 import { useRouter } from "next/router";
 import { NotificationsDropdown } from "./layout/NotificationsDropdown";
 
@@ -63,6 +63,15 @@ export const Header = () => {
                         className="rounded-md p-2 hover:bg-gray-100 border-none outline-none"
                     >
                         <Plus className="h-6 w-6 text-gray-700" />
+                    </Link>
+
+                    {/* Ссылка на чат */}
+                    <Link
+                        href="/chat"
+                        title="Чаты"
+                        className="rounded-md p-2 hover:bg-gray-100"
+                    >
+                        <MessageSquare className="h-6 w-6 text-gray-700" />
                     </Link>
 
                     <NotificationsDropdown />
